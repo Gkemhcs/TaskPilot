@@ -6,16 +6,14 @@ import (
 	userdb "github.com/Gkemhcs/taskpilot/internal/user/gen"
 )
 
-
+// User represents the structure of a user in API requests.
 type User struct {
-	
-    Name     string `json:"name" binding:"required"`
-    Password string `json:"password" binding:"required"`
-
+	Name     string `json:"name" binding:"required"`     // Username
+	Password string `json:"password" binding:"required"` // User password
 }
 
+// IUserService defines the interface for user-related business logic.
 type IUserService interface {
-	CreateUser(ctx context.Context,username,password string) (error)
-	LoginUser(ctx context.Context,username,password string ) (userdb.User ,error)
+	CreateUser(ctx context.Context, username, password string) error
+	LoginUser(ctx context.Context, username, password string) (userdb.User, error)
 }
-

@@ -42,17 +42,17 @@ func (u *UserHandler) CreateUser(c *gin.Context) {
 	if err := c.ShouldBindJSON(&user); err != nil {
 		u.logger.Errorf("incorrect request body %s , %v", user.Name, err)
 		utils.Error(c, http.StatusBadRequest, errors.INCORRECT_REQUEST_BODY.Error())
-
+		return
 	}
 	if user.Name == "" {
 		u.logger.Errorf("missing name in  request body %s , %v", user.Name, errors.MISSING_USER_NAME)
 		utils.Error(c, http.StatusBadRequest, errors.MISSING_USER_NAME.Error())
-
+		return 
 	}
 	if user.Password == "" {
 		u.logger.Errorf("missing password in request body %s , %v", user.Name, errors.MISSING_PASSWORD)
 		utils.Error(c, http.StatusBadRequest, errors.MISSING_PASSWORD.Error())
-
+		return 
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -63,7 +63,7 @@ func (u *UserHandler) CreateUser(c *gin.Context) {
 	if err != nil {
 		u.logger.Errorf("error while creating the user %v",err)
 		utils.Error(c, http.StatusBadRequest, err.Error())
-
+		return
 	}
 	u.logger.Infof("user creation successful")
 	utils.Success(c, http.StatusCreated, map[string]interface{}{

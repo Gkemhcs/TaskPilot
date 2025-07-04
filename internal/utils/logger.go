@@ -2,9 +2,9 @@ package utils
 
 import "github.com/sirupsen/logrus"
 
-
-
-func NewLogger() *logrus.Logger{
+// NewLogger creates and configures a new logrus.Logger instance.
+// The logger outputs logs in JSON format with ISO 8601 timestamps.
+func NewLogger() *logrus.Logger {
 
 	logger := logrus.New()
 	logger.SetFormatter(&logrus.JSONFormatter{

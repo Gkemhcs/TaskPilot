@@ -2,8 +2,9 @@ package auth
 
 import "github.com/golang-jwt/jwt/v5"
 
+// UserClaims defines the custom JWT claims for authenticated users.
 type UserClaims struct {
-	UserID int  `json:"user_id"`
-	Username   string `json:"role"`
-	jwt.RegisteredClaims
+	UserID               int    `json:"user_id"` // Unique user ID
+	Username             string `json:"name"`    // Username of the user
+	jwt.RegisteredClaims        // Standard JWT claims (exp, iat, etc.)
 }

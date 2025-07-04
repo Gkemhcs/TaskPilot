@@ -10,24 +10,25 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func InitDB(logger *logrus.Logger,config *config.Config )(*userdb.Queries){
-	dbURL:=fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",config.DBUser,config.DBPassword,config.DBHost,config.DBPort,config.DBName)
+// InitDB initializes the PostgreSQL database connection using the provided logger and config.
+// Returns a userdb.Queries instance for database operations.
+func InitDB(logger *logrus.Logger, config *config.Config) *userdb.Queries {
+	// Build the PostgreSQL connection URL
+	dbURL := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
+		config.DBUser, config.DBPassword, config.DBHost, config.DBPort, config.DBName)
 
-	
+	// Open a new database connection
+	conn, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		logger.Fatal("Cannot open DB: ", err)
+	}
 
-
-	
-
-	 conn, err := sql.Open("postgres", dbURL)
-    if err != nil {
-        logger.Fatal("Cannot open DB: ", err)
-    }
-
+	// Ping the database to ensure the connection is valid
 	if err := conn.Ping(); err != nil {
-        logger.Fatal("Cannot ping DB: ", err)
-    }
+		logger.Fatal("Cannot ping DB: ", err)
+	}
+
+	// Create a new userdb.Queries instance for executing queries
 	db := userdb.New(conn)
 	return db
 }
-
-
