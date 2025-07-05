@@ -10,10 +10,11 @@ import (
 type User struct {
 	Name     string `json:"name" binding:"required"`     // Username
 	Password string `json:"password" binding:"required"` // User password
+	Email   string `json:"email" binding:"required"`  //User Email
 }
 
 // IUserService defines the interface for user-related business logic.
 type IUserService interface {
-	CreateUser(ctx context.Context, username, password string) error
-	LoginUser(ctx context.Context, username, password string) (userdb.User, error)
+	CreateUser(ctx context.Context, username, password,email  string) error
+	LoginUser(ctx context.Context, email, password string) (*userdb.User, error)
 }

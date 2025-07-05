@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	
 
 	"github.com/Gkemhcs/taskpilot/cmd/server"
 	"github.com/Gkemhcs/taskpilot/internal/config"
@@ -23,13 +23,12 @@ func main() {
 	// Returns a userdb.Queries instance for database operations
 	dbConn := db.InitDB(logger, config)
 
+	logger.Info("Taskpilot server started running")
 	// Start the HTTP server with the provided config, logger, and database connection
 	err := server.NewServer(config, logger, dbConn)
 
 	if err != nil {
 		// Panic if the server fails to start
 		panic(err)
-	} else {
-		fmt.Println("server running fine")
-	}
+	} 
 }

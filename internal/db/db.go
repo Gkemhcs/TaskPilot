@@ -5,14 +5,14 @@ import (
 	"fmt"
 
 	"github.com/Gkemhcs/taskpilot/internal/config"
-	userdb "github.com/Gkemhcs/taskpilot/internal/user/gen"
 
 	"github.com/sirupsen/logrus"
 )
 
 // InitDB initializes the PostgreSQL database connection using the provided logger and config.
 // Returns a userdb.Queries instance for database operations.
-func InitDB(logger *logrus.Logger, config *config.Config) *userdb.Queries {
+
+func InitDB(logger *logrus.Logger, config *config.Config) *sql.DB {
 	// Build the PostgreSQL connection URL
 	dbURL := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
 		config.DBUser, config.DBPassword, config.DBHost, config.DBPort, config.DBName)
@@ -29,6 +29,6 @@ func InitDB(logger *logrus.Logger, config *config.Config) *userdb.Queries {
 	}
 
 	// Create a new userdb.Queries instance for executing queries
-	db := userdb.New(conn)
-	return db
+
+	return conn
 }

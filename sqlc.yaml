@@ -8,3 +8,10 @@ packages:
     engine: "postgresql"
     emit_json_tags: true
     emit_interface: true
+  - name: "projectdb"
+    path: "internal/project/gen"
+    queries: "internal/project/projects.sql"
+    schema: "internal/db/migrations"
+    engine: "postgresql"
+    emit_json_tags: true
+    emit_interface: true

@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 
 	customErrors "github.com/Gkemhcs/taskpilot/internal/errors"
@@ -23,22 +24,23 @@ type UserService struct {
 }
 
 // CreateUser hashes the password and creates a new user in the database.
-func (u *UserService) CreateUser(ctx context.Context, name, password string) error {
+func (u *UserService) CreateUser(ctx context.Context, name,email, password string) error {
 	hashedPassword, err := u.GeneratePasswordHash(password)
 	if err != nil {
 		return err
 	}
 
-	createUserParams := userdb.CreateUserParams{Name: name, HashedPassword: hashedPassword}
+	createUserParams := userdb.CreateUserParams{Name: name, HashedPassword: hashedPassword,Email:email}
 	_, err = u.userRepository.CreateUser(ctx, createUserParams)
-	if err, ok := err.(*pq.Error); ok {
-	if err.Code == "23505" {
-		// Check constraint name if needed
-		if err.Constraint == "users_pkey" {
-			return customErrors.ErrUserAlreadyExists
+	
+	var pqErr *pq.Error
+	if errors.As(err, &pqErr) {
+		if pqErr.Code == "23505" {
+			if pqErr.Constraint == "users_pkey" {
+				return customErrors.ErrUserAlreadyExists
+			}
 		}
 	}
-}
 	if err != nil {
 		return err
 	}
@@ -47,20 +49,25 @@ func (u *UserService) CreateUser(ctx context.Context, name, password string) err
 
 // LoginUser authenticates a user by name and password.
 // Returns the user if authentication is successful.
-func (u *UserService) LoginUser(ctx context.Context, name string, password string) (userdb.User, error) {
-	user, err := u.userRepository.GetUserByName(ctx, name)
-	if err != nil {
-		return userdb.User{}, err
+func (u *UserService) LoginUser(ctx context.Context, email string, password string) (*userdb.User, error) {
+	user, err := u.userRepository.GetUserByEmail(ctx,email)
+	
+	if errors.Is(err,sql.ErrNoRows){
+		return nil,customErrors.USER_NOT_FOUND
 	}
+	if err != nil {
+		return nil, err
+	}
+	
 	// Compare the provided password with the stored hashed password
 	err = u.CheckHashedPassword(password, user.HashedPassword)
 	if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
-		return userdb.User{}, customErrors.ErrMismatchedPassword
+		return nil, customErrors.ErrMismatchedPassword
 	}
 	if err != nil {
-		return userdb.User{}, err
+		return nil, err
 	}
-	return user, nil
+	return &user, nil
 }
 
 // GeneratePasswordHash hashes a plain-text password using bcrypt.

@@ -44,6 +44,11 @@ func (u *UserHandler) CreateUser(c *gin.Context) {
 		utils.Error(c, http.StatusBadRequest, errors.INCORRECT_REQUEST_BODY.Error())
 		return
 	}
+	if user.Email == ""{
+		u.logger.Errorf("missing email in  request body %s , %v", user.Name, errors.ErrMissingEmail)
+		utils.Error(c, http.StatusBadRequest, errors.ErrMissingEmail.Error())
+		return 
+	}
 	if user.Name == "" {
 		u.logger.Errorf("missing name in  request body %s , %v", user.Name, errors.MISSING_USER_NAME)
 		utils.Error(c, http.StatusBadRequest, errors.MISSING_USER_NAME.Error())
@@ -55,11 +60,11 @@ func (u *UserHandler) CreateUser(c *gin.Context) {
 		return 
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 
 	defer cancel()
 
-	err := u.userService.CreateUser(ctx, user.Name, user.Password)
+	err := u.userService.CreateUser(ctx, user.Name,user.Email, user.Password,)
 	if err != nil {
 		u.logger.Errorf("error while creating the user %v",err)
 		utils.Error(c, http.StatusBadRequest, err.Error())
@@ -67,7 +72,7 @@ func (u *UserHandler) CreateUser(c *gin.Context) {
 	}
 	u.logger.Infof("user creation successful")
 	utils.Success(c, http.StatusCreated, map[string]interface{}{
-		"message":     "user crated",
+		"message":     "user created",
 		"status_code": http.StatusCreated,
 	})
 }
@@ -75,8 +80,13 @@ func (u *UserHandler) CreateUser(c *gin.Context) {
 func (u *UserHandler) LoginUser(c *gin.Context) {
 	var user User
 	if err := c.ShouldBindJSON(&user); err != nil {
-		u.logger.Errorf("incorrect request body %s , %v", user.Name, err)
+		u.logger.Errorf("incorrect request body %s , %v", user.Email, err)
 		utils.Error(c, http.StatusBadRequest, errors.INCORRECT_REQUEST_BODY.Error())
+		return 
+	}
+	if user.Email == ""{
+		u.logger.Errorf("missing email in  request body %s , %v", user.Name, errors.ErrMissingEmail)
+		utils.Error(c, http.StatusBadRequest, errors.ErrMissingEmail.Error())
 		return 
 	}
 	if user.Name == "" {
@@ -90,23 +100,23 @@ func (u *UserHandler) LoginUser(c *gin.Context) {
 		return 
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()
-	userInfo, err := u.userService.LoginUser(ctx, user.Name, user.Password)
+	userInfo, err := u.userService.LoginUser(ctx, user.Email,user.Password)
 	if err != nil {
 		u.logger.Errorf("unable to login  %v",err )
 		utils.Error(c, http.StatusBadRequest, err.Error())
 		return 
 
 	}
-	tokenString, err := u.jwtManager.Generate(int(userInfo.ID), userInfo.Name)
+	tokenString, err := u.jwtManager.Generate(int(userInfo.ID), userInfo.Name,userInfo.Email)
 	if err != nil {
 		u.logger.Errorf("error while generating the token %v",err)
 		
 		utils.Error(c, http.StatusBadRequest, err.Error())
 		return 
 	}
-	u.logger.Infof("%s logged in and token generated successfully", user.Name)
+	u.logger.Infof("%s logged in and token generated successfully", user.Email)
 	utils.Success(c, http.StatusOK, map[string]interface{}{
 
 		"token": tokenString,

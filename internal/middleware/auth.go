@@ -23,7 +23,6 @@ func JWTAuthMiddleware(logger *logrus.Logger, jwtManager *auth.JWTManager) gin.H
 				"method": c.Request.Method,
 				"ip":     c.ClientIP(),
 			}).Warn("Missing Authorization header")
-
 			utils.Error(c, http.StatusUnauthorized, errors.MISSING_AUTHORIZATION_HEADER.Error())
 			return
 		}
@@ -58,7 +57,8 @@ func JWTAuthMiddleware(logger *logrus.Logger, jwtManager *auth.JWTManager) gin.H
 
 		// Attach user ID to request context for downstream handlers
 		c.Set("userID", int(userClaims.UserID))
-
+		c.Set("userName",userClaims.Username)
+		c.Set("email",userClaims.Email)
 		c.Next()
 	}
 }

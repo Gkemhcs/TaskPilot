@@ -1,0 +1,2 @@
+ALTER TABLE projects
+DROP CONSTRAINT unique_user_project_name;

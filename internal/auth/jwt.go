@@ -9,6 +9,7 @@ import (
 
 // JWTManager handles creation and verification of JWT tokens.
 type JWTManager struct {
+	
 	secretKey     string        // Secret key used to sign tokens
 	tokenDuration time.Duration // Duration for which the token is valid
 }
@@ -19,10 +20,11 @@ func NewJWTManager(secretKey string, duration time.Duration) *JWTManager {
 }
 
 // Generate creates a new JWT token for a user with the given userID and username.
-func (j *JWTManager) Generate(userID int, username string) (string, error) {
+func (j *JWTManager) Generate(userID int, username string,email string ) (string, error) {
 	claims := &UserClaims{
 		UserID:   userID,
 		Username: username,
+		Email : email ,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(j.tokenDuration)), // Set token expiration
 			IssuedAt:  jwt.NewNumericDate(time.Now()),                      // Set token issue time
@@ -52,6 +54,7 @@ func (j *JWTManager) Verify(tokenString string) (*UserClaims, error) {
 	}
 
 	claims, ok := token.Claims.(*UserClaims)
+	
 	if !ok || !token.Valid {
 		return nil, errors.New("invalid token")
 	}

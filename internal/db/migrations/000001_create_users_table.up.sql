@@ -1,7 +1,7 @@
-CREATE TABLE users(
-    id serial ,
-    name varchar(100) NOT NULL, 
-    hashed_password varchar(255) NOT NULL,
-    created_at timestamp NOT NULL  DEFAULT NOW(),
-    PRIMARY KEY(name)
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    email VARCHAR(30) NOT NULL UNIQUE,
+    name VARCHAR(100) NOT NULL, 
+    hashed_password VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT now()
 );
