@@ -17,4 +17,9 @@ type User struct {
 type IUserService interface {
 	CreateUser(ctx context.Context, username, password,email  string) error
 	LoginUser(ctx context.Context, email, password string) (*userdb.User, error)
+	
+}
+
+type RefreshRequest struct {
+	RefreshToken string `json:"token"`
 }

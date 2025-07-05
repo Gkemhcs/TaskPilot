@@ -1,11 +1,12 @@
 package middleware
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 
 	"github.com/Gkemhcs/taskpilot/internal/auth"
-	"github.com/Gkemhcs/taskpilot/internal/errors"
+	customErrors "github.com/Gkemhcs/taskpilot/internal/errors"
 	"github.com/Gkemhcs/taskpilot/internal/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -23,7 +24,7 @@ func JWTAuthMiddleware(logger *logrus.Logger, jwtManager *auth.JWTManager) gin.H
 				"method": c.Request.Method,
 				"ip":     c.ClientIP(),
 			}).Warn("Missing Authorization header")
-			utils.Error(c, http.StatusUnauthorized, errors.MISSING_AUTHORIZATION_HEADER.Error())
+			utils.Error(c, http.StatusUnauthorized, customErrors.MISSING_AUTHORIZATION_HEADER.Error())
 			return
 		}
 
@@ -36,13 +37,18 @@ func JWTAuthMiddleware(logger *logrus.Logger, jwtManager *auth.JWTManager) gin.H
 				"method": c.Request.Method,
 				"ip":     c.ClientIP(),
 			}).Warn("Invalid Authorization header format")
-			utils.Error(c, http.StatusUnauthorized, errors.INVALID_TOKEN_FORMAT.Error())
+			utils.Error(c, http.StatusUnauthorized, customErrors.INVALID_TOKEN_FORMAT.Error())
 			return
 		}
 
 		tokenString := parts[1]
 		// Verify the JWT token
 		userClaims, err := jwtManager.Verify(tokenString)
+		if errors.Is(err,customErrors.ErrTokenExpired){
+			logger.Errorf("%v",customErrors.ErrTokenExpired)
+			utils.Error(c,http.StatusBadRequest,customErrors.ErrTokenExpired.Error())
+			return 
+		}
 		if err != nil {
 			// Log and return error if token verification fails
 			logger.WithFields(logrus.Fields{
@@ -51,7 +57,7 @@ func JWTAuthMiddleware(logger *logrus.Logger, jwtManager *auth.JWTManager) gin.H
 				"ip":     c.ClientIP(),
 				"error":  err.Error(),
 			}).Warn("Token verification failed")
-			utils.Error(c, http.StatusUnauthorized, errors.INVALID_TOKEN.Error())
+			utils.Error(c, http.StatusUnauthorized, customErrors.INVALID_TOKEN.Error())
 			return
 		}
 

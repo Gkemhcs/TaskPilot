@@ -20,8 +20,8 @@ func LoadConfig() *Config {
 	// Set default values for configuration
 	viper.SetDefault("PORT", 8080)
 	viper.SetDefault("HOST", "0.0.0.0")
-	viper.SetDefault("ACCESS_TOKEN_DURATION", "15m")
-	viper.SetDefault("REFRESH_TOKEN_DURATION", "15m")
+	viper.SetDefault("ACCESS_TOKEN_DURATION", "1m")
+	viper.SetDefault("REFRESH_TOKEN_DURATION", "24h")
 	viper.SetDefault("CONTEXT_TIMEOUT", "10s")
 
 	// Parse token duration from config

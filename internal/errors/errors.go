@@ -22,14 +22,16 @@ var ErrMismatchedPassword = errors.New("password doesnt match enter correct pass
 var ErrUserAlreadyExists = errors.New("User with the same name already exists")
 var ErrMissingEmail = errors.New("Email is missing in body")
 
-var ErrMissingJwtToken=errors.New("authorization token missing")
+var ErrMissingJwtToken = errors.New("authorization token missing")
 
-var ErrUserNotExist=errors.New("User not found, first create the user")
+var ErrUserNotExist = errors.New("User not found, first create the user")
 
-var ErrInvalidProjectId=errors.New("Invalid Project ID")
+var ErrInvalidProjectId = errors.New("Invalid Project ID")
 
-var ErrInvalidUserId=errors.New("Invalid User Id set in context")
-var ErrUserIDNotFoundInContext=errors.New("UserID is missing from context, try to pass access-token in body")
-var ErrProjectNotExist=errors.New("sorry the project name you are searching for isn't found")
-var ErrProjectIDNotExist=errors.New("sorry the project id you are searching for isn't found")
-var ErrProjectsEmpty=errors.New("projects are empty")
+var ErrInvalidUserId = errors.New("Invalid User Id set in context")
+var ErrUserIDNotFoundInContext = errors.New("UserID is missing from context, try to pass access-token in body")
+var ErrProjectNotExist = errors.New("sorry the project name you are searching for isn't found")
+var ErrProjectIDNotExist = errors.New("sorry the project id you are searching for isn't found")
+var ErrProjectsEmpty = errors.New("projects are empty")
+
+var ErrTokenExpired = errors.New("access token has expired")

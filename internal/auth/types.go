@@ -21,3 +21,9 @@ type CreateJwtManagerParams struct{
 	AccessTokenKey  string 
 	RefreshTokenKey string 
 }
+
+
+type GenerateJwtResponse struct {
+	AccessToken string 
+	RefreshToken string 
+}
