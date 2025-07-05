@@ -21,10 +21,15 @@ func LoadConfig() *Config {
 	viper.SetDefault("PORT", 8080)
 	viper.SetDefault("HOST", "0.0.0.0")
 	viper.SetDefault("ACCESS_TOKEN_DURATION", "15m")
+	viper.SetDefault("REFRESH_TOKEN_DURATION", "15m")
 	viper.SetDefault("CONTEXT_TIMEOUT", "10s")
 
 	// Parse token duration from config
-	duration, err := time.ParseDuration(viper.GetString("ACCESS_TOKEN_DURATION"))
+	accessTokenDuration, err := time.ParseDuration(viper.GetString("ACCESS_TOKEN_DURATION"))
+	if err != nil {
+		log.Fatalf("invalid duration: %v", err)
+	}
+	refreshTokenDuration, err := time.ParseDuration(viper.GetString("REFRESH_TOKEN_DURATION"))
 	if err != nil {
 		log.Fatalf("invalid duration: %v", err)
 	}
@@ -37,8 +42,10 @@ func LoadConfig() *Config {
 		DBUser:              viper.GetString("DB_USER"),
 		DBPassword:          viper.GetString("DB_PASSWORD"),
 		DBName:              viper.GetString("DB_NAME"),
-		JWTSecret:           viper.GetString("JWT_SECRET"),
+		JWTAccessTokenSecret: viper.GetString("JWT_ACCESS_TOKEN_SECRET"),
+		JWTRefreshTokenSecret:viper.GetString("JWT_REFRESH_TOKEN_SECRET"),
 		HOST:                viper.GetString("HOST"),
-		AccessTokenDuration: duration,
+		AccessTokenDuration: accessTokenDuration,
+		RefreshTokenDuration: refreshTokenDuration,
 	}
 }

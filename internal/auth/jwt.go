@@ -10,29 +10,37 @@ import (
 // JWTManager handles creation and verification of JWT tokens.
 type JWTManager struct {
 	
-	secretKey     string        // Secret key used to sign tokens
-	tokenDuration time.Duration // Duration for which the token is valid
+	accessTokenSecretKey     string    
+	refreshTokenSecretKey string 
+	refreshTokenDuration time.Duration    // Secret key used to sign tokens
+	accessTokenDuration time.Duration // Duration for which the token is valid
 }
 
 // NewJWTManager creates a new JWTManager with the given secret key and token duration.
-func NewJWTManager(secretKey string, duration time.Duration) *JWTManager {
-	return &JWTManager{secretKey, duration}
+func NewJWTManager(params CreateJwtManagerParams) *JWTManager {
+	return &JWTManager{
+		accessTokenSecretKey: params.AccessTokenKey,
+		refreshTokenDuration: params.RefreshTokenDuration,
+		accessTokenDuration: params.AccessTokenDuration,
+		refreshTokenSecretKey: params.RefreshTokenKey,
+	}
 }
 
 // Generate creates a new JWT token for a user with the given userID and username.
+
 func (j *JWTManager) Generate(userID int, username string,email string ) (string, error) {
 	claims := &UserClaims{
 		UserID:   userID,
 		Username: username,
 		Email : email ,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(j.tokenDuration)), // Set token expiration
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(j.accessTokenDuration)), // Set token expiration
 			IssuedAt:  jwt.NewNumericDate(time.Now()),                      // Set token issue time
 		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(j.secretKey)) // Sign and return the token
+	return token.SignedString([]byte(j.accessTokenSecretKey)) // Sign and return the token
 }
 
 // Verify parses and validates a JWT token string and returns the claims if valid.
@@ -45,7 +53,7 @@ func (j *JWTManager) Verify(tokenString string) (*UserClaims, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, errors.New("unexpected signing method")
 			}
-			return []byte(j.secretKey), nil
+			return []byte(j.accessTokenSecretKey), nil
 		},
 	)
 

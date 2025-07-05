@@ -11,6 +11,9 @@ type Config struct {
 	DBPassword          string        // Database password
 	DBName              string        // Database name
 	HOST                string        // Host for the HTTP server
-	JWTSecret           string        // Secret key for JWT signing
+	JWTAccessTokenSecret           string        // Secret key for JWT Access Key signing
+	JWTRefreshTokenSecret 	string  // Secret key for JWT Refresh Key signing
 	AccessTokenDuration time.Duration // Duration for JWT access tokens
+	RefreshTokenDuration time.Duration // Duration for JWT refresh tokens
 }
+

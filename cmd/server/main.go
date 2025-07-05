@@ -29,7 +29,13 @@ func NewServer(config *config.Config, logger *logrus.Logger, dbConn *sql.DB) err
 	// Initialize user service with database connection
 	userService := user.NewUserService(userdb.New(dbConn))
 	// Initialize JWT manager for authentication
-	jwtManager := auth.NewJWTManager(config.JWTSecret, config.AccessTokenDuration)
+	params := auth.CreateJwtManagerParams{
+		AccessTokenDuration:  config.AccessTokenDuration,
+		RefreshTokenDuration: config.RefreshTokenDuration,
+		AccessTokenKey:       config.JWTAccessTokenSecret,
+		RefreshTokenKey:      config.JWTRefreshTokenSecret,
+	}
+	jwtManager := auth.NewJWTManager(params)
 
 	// Create user handler with service, logger, and JWT manager
 	userHandler := user.NewUserHandler(userService, logger, jwtManager)
