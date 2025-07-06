@@ -120,8 +120,6 @@ func mapColor(color string)(projectdb.ProjectColor){
 switch color{
 	case "green":
 		return projectdb.ProjectColorGREEN
-
-
 	case "yellow":
 		return projectdb.ProjectColorYELLOW
 	default:

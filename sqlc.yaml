@@ -15,3 +15,11 @@ packages:
     engine: "postgresql"
     emit_json_tags: true
     emit_interface: true
+  - name: "taskdb"
+    path: "internal/task/gen"
+    queries: "internal/task/tasks.sql"
+    schema: "internal/db/migrations"
+    engine: "postgresql"
+    emit_json_tags: true
+    emit_interface: true
+

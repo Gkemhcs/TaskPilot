@@ -70,6 +70,17 @@ func (u *UserService) LoginUser(ctx context.Context, email string, password stri
 	return &user, nil
 }
 
+func(u *UserService) GetUserByEmail(ctx context.Context,email string)(*userdb.User,error){
+	user,err:=u.userRepository.GetUserByEmail(ctx,email)
+	if errors.Is(err,sql.ErrNoRows){
+		return nil,customErrors.USER_NOT_FOUND
+	}
+	if err!=nil{
+		return  nil,err
+	}
+	return &user,nil
+}
+
 // GeneratePasswordHash hashes a plain-text password using bcrypt.
 func (u *UserService) GeneratePasswordHash(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)

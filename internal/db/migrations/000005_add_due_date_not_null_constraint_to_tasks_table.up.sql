@@ -1,0 +1,1 @@
+ALTER TABLE tasks ADD CONSTRAINT  due_date_not_null CHECK (due_date IS NOT NULL);

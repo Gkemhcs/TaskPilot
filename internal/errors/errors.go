@@ -35,3 +35,12 @@ var ErrProjectIDNotExist = errors.New("sorry the project id you are searching fo
 var ErrProjectsEmpty = errors.New("projects are empty")
 
 var ErrTokenExpired = errors.New("access token has expired")
+
+var ErrTaskNotFound=errors.New("sorry the task not found")
+
+var ErrAssigneeMissingFromBody=errors.New("assignee email  is missing from body")
+var ErrMissingDueDate=errors.New("Due date is missing from body")
+
+var ErrorTaskTitleMissing=errors.New("task title is missing from request body")
+
+var ErrMissingProjectID=errors.New("project id is missing from request body")
