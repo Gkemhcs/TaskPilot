@@ -24,15 +24,15 @@ type UserService struct {
 }
 
 // CreateUser hashes the password and creates a new user in the database.
-func (u *UserService) CreateUser(ctx context.Context, name,email, password string) error {
+func (u *UserService) CreateUser(ctx context.Context, name, email, password string) error {
 	hashedPassword, err := u.GeneratePasswordHash(password)
 	if err != nil {
 		return err
 	}
 
-	createUserParams := userdb.CreateUserParams{Name: name, HashedPassword: hashedPassword,Email:email}
+	createUserParams := userdb.CreateUserParams{Name: name, HashedPassword: hashedPassword, Email: email}
 	_, err = u.userRepository.CreateUser(ctx, createUserParams)
-	
+
 	var pqErr *pq.Error
 	if errors.As(err, &pqErr) {
 		if pqErr.Code == "23505" {
@@ -50,15 +50,12 @@ func (u *UserService) CreateUser(ctx context.Context, name,email, password strin
 // LoginUser authenticates a user by name and password.
 // Returns the user if authentication is successful.
 func (u *UserService) LoginUser(ctx context.Context, email string, password string) (*userdb.User, error) {
-	user, err := u.userRepository.GetUserByEmail(ctx,email)
-	
-	if errors.Is(err,sql.ErrNoRows){
-		return nil,customErrors.USER_NOT_FOUND
-	}
+
+	user, err := u.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Compare the provided password with the stored hashed password
 	err = u.CheckHashedPassword(password, user.HashedPassword)
 	if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
@@ -67,18 +64,18 @@ func (u *UserService) LoginUser(ctx context.Context, email string, password stri
 	if err != nil {
 		return nil, err
 	}
-	return &user, nil
+	return user, nil
 }
 
-func(u *UserService) GetUserByEmail(ctx context.Context,email string)(*userdb.User,error){
-	user,err:=u.userRepository.GetUserByEmail(ctx,email)
-	if errors.Is(err,sql.ErrNoRows){
-		return nil,customErrors.USER_NOT_FOUND
+func (u *UserService) GetUserByEmail(ctx context.Context, email string) (*userdb.User, error) {
+	user, err := u.userRepository.GetUserByEmail(ctx, email)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, customErrors.USER_NOT_FOUND
 	}
-	if err!=nil{
-		return  nil,err
+	if err != nil {
+		return nil, err
 	}
-	return &user,nil
+	return &user, nil
 }
 
 // GeneratePasswordHash hashes a plain-text password using bcrypt.

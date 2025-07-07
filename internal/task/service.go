@@ -7,6 +7,7 @@ import (
 
 	customErrors "github.com/Gkemhcs/taskpilot/internal/errors"
 	"github.com/Gkemhcs/taskpilot/internal/task/gen"
+	userdb "github.com/Gkemhcs/taskpilot/internal/user/gen"
 )
 
 
@@ -78,6 +79,13 @@ func(t *TaskService) GetTaskByID(ctx context.Context,taskID int)(*taskdb.Task,er
 
 }
 
+func(t *TaskService) GetTasksByProjectID(ctx context.Context,projectID int)([]taskdb.Task,error){
+	tasks,err:=t.taskRepository.GetTasksByProjectId(ctx,int64(projectID))
+	if err!=nil{
+		return nil,err
+	}
+	return tasks,nil 
+}
 func(t *TaskService) DeleteTask(ctx context.Context,taskID int)error{
 	err:=t.taskRepository.DeleteTask(ctx,int64(taskID))
 	if errors.Is(err, sql.ErrNoRows) {
@@ -91,5 +99,8 @@ func(t *TaskService) DeleteTask(ctx context.Context,taskID int)error{
 
 
 }
+
+
+
 
 

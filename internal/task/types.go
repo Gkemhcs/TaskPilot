@@ -1,9 +1,10 @@
 package task
 
 import (
+	"context"
 	"time"
 
-	"golang.org/x/text/date"
+	taskdb "github.com/Gkemhcs/taskpilot/internal/task/gen"
 )
 
 
@@ -26,4 +27,9 @@ type CreateTaskInput struct {
    Status string `json:"status"`
    Priority  string `json:"priority"`
    DueDate  time.Time `json:"due_date"`
+}
+
+
+type TaskQueryService interface {
+   GetTasksByProjectID(ctx context.Context,projectID int)([]taskdb.Task,error)
 }

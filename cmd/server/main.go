@@ -10,6 +10,8 @@ import (
 	"github.com/Gkemhcs/taskpilot/internal/middleware"
 	"github.com/Gkemhcs/taskpilot/internal/project"
 	projectdb "github.com/Gkemhcs/taskpilot/internal/project/gen"
+	"github.com/Gkemhcs/taskpilot/internal/task"
+	taskdb "github.com/Gkemhcs/taskpilot/internal/task/gen"
 	"github.com/Gkemhcs/taskpilot/internal/user"
 	userdb "github.com/Gkemhcs/taskpilot/internal/user/gen"
 	"github.com/gin-gonic/gin"
@@ -46,6 +48,9 @@ func NewServer(config *config.Config, logger *logrus.Logger, dbConn *sql.DB) err
 	projectHandler := project.NewProjectHandler(logger,projectService)
 	project.RegisterProjectRoutes(v1, projectHandler,jwtManager)
 
+	taskService:=task.NewTaskService(taskdb.New(dbConn))
+	taskHandler:=task.NewTaskHandler(*taskService,userService,logger)
+	task.RegisterTaskRoutes(v1,taskHandler,jwtManager)
 	// Health check endpoint
 	router.GET("/ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "pong"})

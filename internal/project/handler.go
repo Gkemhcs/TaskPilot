@@ -9,21 +9,24 @@ import (
 	"github.com/Gkemhcs/taskpilot/internal/auth"
 	customErrors "github.com/Gkemhcs/taskpilot/internal/errors"
 	"github.com/Gkemhcs/taskpilot/internal/middleware"
+	"github.com/Gkemhcs/taskpilot/internal/task"
 	"github.com/Gkemhcs/taskpilot/internal/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
 
-func NewProjectHandler(logger *logrus.Logger, projectService *ProjectService) *ProjectHandler {
+func NewProjectHandler(logger *logrus.Logger, projectService *ProjectService,taskService task.TaskQueryService) *ProjectHandler {
 	return &ProjectHandler{
 		logger:         logger,
 		projectService: projectService,
+		taskQueryService: taskService,
 	}
 }
 
 type ProjectHandler struct {
 	logger         *logrus.Logger
 	projectService *ProjectService
+	taskQueryService task.TaskQueryService
 }
 
 func RegisterProjectRoutes(r *gin.RouterGroup, handler *ProjectHandler,jwtManager *auth.JWTManager) {
@@ -36,6 +39,7 @@ func RegisterProjectRoutes(r *gin.RouterGroup, handler *ProjectHandler,jwtManage
 		projectGroup.PUT("/:id", handler.UpdateProject)
 		projectGroup.DELETE("/:id", handler.DeleteProject)
 		projectGroup.GET("/names/",handler.GetProjectByName)
+		projectGroup.GET("/tasks",handler.GetTasksByProjectID)
 	}
 }
 
@@ -191,5 +195,10 @@ func (p *ProjectHandler) DeleteProject(c *gin.Context) {
 		"message": "project delete successfully",
 		"code":    http.StatusOK,
 	})
+
+}
+
+
+func(p *ProjectHandler)GetTasksByProjectID(c *gin.Context){
 
 }

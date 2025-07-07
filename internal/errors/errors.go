@@ -44,3 +44,5 @@ var ErrMissingDueDate=errors.New("Due date is missing from body")
 var ErrorTaskTitleMissing=errors.New("task title is missing from request body")
 
 var ErrMissingProjectID=errors.New("project id is missing from request body")
+
+var ErrInvalidTaskID=errors.New("Invalid Task Id Entered")
