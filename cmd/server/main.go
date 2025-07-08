@@ -28,8 +28,18 @@ func NewServer(config *config.Config, logger *logrus.Logger, dbConn *sql.DB) err
 
 	// Create API v1 group with custom logger middleware
 	v1 := router.Group("/api/v1", middleware.LoggerMiddleware(logger))
+	
 	// Initialize user service with database connection
 	userService := user.NewUserService(userdb.New(dbConn))
+
+	
+	// Initialize project service with database connection
+	projectService:=project.NewProjectService(projectdb.New(dbConn))
+
+	
+	// Initialize task service with database connection
+	taskService:=task.NewTaskService(taskdb.New(dbConn))
+
 	// Initialize JWT manager for authentication
 	params := auth.CreateJwtManagerParams{
 		AccessTokenDuration:  config.AccessTokenDuration,
@@ -44,13 +54,19 @@ func NewServer(config *config.Config, logger *logrus.Logger, dbConn *sql.DB) err
 	// Register user-related routes under /api/v1/users
 	user.RegisterRoutes(v1, userHandler)
 
-	projectService:=project.NewProjectService(projectdb.New(dbConn))
-	projectHandler := project.NewProjectHandler(logger,projectService)
+	
+	// Create project handler with service, logger
+	projectHandler := project.NewProjectHandler(logger,projectService,taskService)
+
+	// Register project-related routes under /api/v1/projects
 	project.RegisterProjectRoutes(v1, projectHandler,jwtManager)
 
-	taskService:=task.NewTaskService(taskdb.New(dbConn))
-	taskHandler:=task.NewTaskHandler(*taskService,userService,logger)
+	// Create task handler with service, logger
+	taskHandler:=task.NewTaskHandler(*taskService,userService,logger,projectService)
+
+	// Register task-related routes under /api/v1/tasks
 	task.RegisterTaskRoutes(v1,taskHandler,jwtManager)
+
 	// Health check endpoint
 	router.GET("/ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "pong"})

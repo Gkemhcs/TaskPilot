@@ -53,13 +53,54 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 	return i, err
 }
 
-const deleteTask = `-- name: DeleteTask :exec
+const deleteTask = `-- name: DeleteTask :execrows
 DELETE FROM tasks WHERE id = $1
 `
 
-func (q *Queries) DeleteTask(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, deleteTask, id)
-	return err
+func (q *Queries) DeleteTask(ctx context.Context, id int64) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteTask, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+const getAllTasks = `-- name: GetAllTasks :many
+SELECT id, project_id, assignee_id, title, description, status, priority, due_date, created_at, updated_at FROM tasks ORDER BY id
+`
+
+func (q *Queries) GetAllTasks(ctx context.Context) ([]Task, error) {
+	rows, err := q.db.QueryContext(ctx, getAllTasks)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Task
+	for rows.Next() {
+		var i Task
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProjectID,
+			&i.AssigneeID,
+			&i.Title,
+			&i.Description,
+			&i.Status,
+			&i.Priority,
+			&i.DueDate,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getTaskById = `-- name: GetTaskById :one
@@ -120,4 +161,41 @@ func (q *Queries) GetTasksByProjectId(ctx context.Context, projectID int64) ([]T
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateTask = `-- name: UpdateTask :execrows
+
+UPDATE tasks
+SET
+  title = COALESCE($1, title),
+  description = COALESCE($2, description),
+  due_date = COALESCE($3, due_date),
+  status = COALESCE($4, status),
+  priority = COALESCE($5, priority),
+  updated_at = now()
+WHERE id = $6
+`
+
+type UpdateTaskParams struct {
+	Title       sql.NullString   `json:"title"`
+	Description sql.NullString   `json:"description"`
+	DueDate     sql.NullTime     `json:"due_date"`
+	Status      NullTaskStatus   `json:"status"`
+	Priority    NullTaskPriority `json:"priority"`
+	ID          int64            `json:"id"`
+}
+
+func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, updateTask,
+		arg.Title,
+		arg.Description,
+		arg.DueDate,
+		arg.Status,
+		arg.Priority,
+		arg.ID,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }

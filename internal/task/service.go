@@ -4,10 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 
 	customErrors "github.com/Gkemhcs/taskpilot/internal/errors"
 	"github.com/Gkemhcs/taskpilot/internal/task/gen"
-	userdb "github.com/Gkemhcs/taskpilot/internal/user/gen"
 )
 
 
@@ -87,8 +87,8 @@ func(t *TaskService) GetTasksByProjectID(ctx context.Context,projectID int)([]ta
 	return tasks,nil 
 }
 func(t *TaskService) DeleteTask(ctx context.Context,taskID int)error{
-	err:=t.taskRepository.DeleteTask(ctx,int64(taskID))
-	if errors.Is(err, sql.ErrNoRows) {
+	rows,err:=t.taskRepository.DeleteTask(ctx,int64(taskID))
+	if rows==0 {
 		return customErrors.ErrTaskNotFound
 
 	}
@@ -101,6 +101,63 @@ func(t *TaskService) DeleteTask(ctx context.Context,taskID int)error{
 }
 
 
+func(t *TaskService) GetAllTasks(ctx context.Context)([]taskdb.Task,error){
 
+	tasks,err:=t.taskRepository.GetAllTasks(ctx)
+	if err!=nil{
+		return nil,err
+	}
+	return tasks,nil
+}
+
+
+func deref(p *string) string {
+	if p == nil {
+		return ""
+	}
+	return *p
+}
+
+func derefTime(t *time.Time) time.Time {
+	if t == nil {
+		return time.Time{}
+	}
+	return *t
+}
+
+
+func(t *TaskService)UpdateTask(ctx context.Context,req UpdateTaskRequest)(error){
+	updateParams:=taskdb.UpdateTaskParams{
+		ID: req.ID,
+		Title: sql.NullString{
+			String: deref(req.Title),
+			Valid:  req.Title != nil,
+		},
+		Description: sql.NullString{
+			String: deref(req.Description),
+			Valid:  req.Description != nil,
+		},
+		DueDate: sql.NullTime{
+			Time:  derefTime(req.DueDate),
+			Valid: req.DueDate != nil,
+		},
+		Status: taskdb.NullTaskStatus{
+			TaskStatus: taskdb.TaskStatus(deref(req.Status)),
+			Valid:      req.Status != nil,
+		},
+		Priority: taskdb.NullTaskPriority{
+			TaskPriority: taskdb.TaskPriority(deref(req.Priority)),
+			Valid:        req.Priority != nil,
+		},
+	}
+	rows,err:=t.taskRepository.UpdateTask(ctx,updateParams)
+	if rows==0{
+		return customErrors.ErrTaskNotFound
+	}
+	if err!=nil{
+		return err
+	}
+	return nil 
+}
 
 

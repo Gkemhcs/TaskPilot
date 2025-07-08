@@ -1,5 +1,7 @@
 package project
 
+
+
 // Project represents a project entity with its basic attributes.
 // Used for creating, retrieving, and displaying project information.
 type Project struct {
@@ -37,3 +39,5 @@ type IProjectService interface {
 	// Should apply changes to the specified project.
 	UpdateProject()
 }
+
+

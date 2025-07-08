@@ -12,7 +12,25 @@ SELECT * FROM tasks WHERE id = $1;
 SELECT * FROM tasks WHERE project_id = $1 ORDER BY id;
 
 
--- name: DeleteTask :exec
+
+
+-- name: GetAllTasks :many
+SELECT * FROM tasks ORDER BY id;
+
+-- name: DeleteTask :execrows
 DELETE FROM tasks WHERE id = $1;
 
 
+
+
+-- name: UpdateTask :execrows
+
+UPDATE tasks
+SET
+  title = COALESCE(sqlc.narg('title'), title),
+  description = COALESCE(sqlc.narg('description'), description),
+  due_date = COALESCE(sqlc.narg('due_date'), due_date),
+  status = COALESCE(sqlc.narg('status'), status),
+  priority = COALESCE(sqlc.narg('priority'), priority),
+  updated_at = now()
+WHERE id = sqlc.arg('id');

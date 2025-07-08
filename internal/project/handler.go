@@ -9,13 +9,13 @@ import (
 	"github.com/Gkemhcs/taskpilot/internal/auth"
 	customErrors "github.com/Gkemhcs/taskpilot/internal/errors"
 	"github.com/Gkemhcs/taskpilot/internal/middleware"
-	"github.com/Gkemhcs/taskpilot/internal/task"
+	"github.com/Gkemhcs/taskpilot/internal/types"
 	"github.com/Gkemhcs/taskpilot/internal/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
 
-func NewProjectHandler(logger *logrus.Logger, projectService *ProjectService,taskService task.TaskQueryService) *ProjectHandler {
+func NewProjectHandler(logger *logrus.Logger, projectService *ProjectService,taskService types.TaskQueryService) *ProjectHandler {
 	return &ProjectHandler{
 		logger:         logger,
 		projectService: projectService,
@@ -26,7 +26,7 @@ func NewProjectHandler(logger *logrus.Logger, projectService *ProjectService,tas
 type ProjectHandler struct {
 	logger         *logrus.Logger
 	projectService *ProjectService
-	taskQueryService task.TaskQueryService
+	taskQueryService types.TaskQueryService
 }
 
 func RegisterProjectRoutes(r *gin.RouterGroup, handler *ProjectHandler,jwtManager *auth.JWTManager) {
@@ -39,7 +39,7 @@ func RegisterProjectRoutes(r *gin.RouterGroup, handler *ProjectHandler,jwtManage
 		projectGroup.PUT("/:id", handler.UpdateProject)
 		projectGroup.DELETE("/:id", handler.DeleteProject)
 		projectGroup.GET("/names/",handler.GetProjectByName)
-		projectGroup.GET("/tasks",handler.GetTasksByProjectID)
+		projectGroup.GET("/:id/tasks",handler.GetTasksByProjectID)
 	}
 }
 
@@ -200,5 +200,34 @@ func (p *ProjectHandler) DeleteProject(c *gin.Context) {
 
 
 func(p *ProjectHandler)GetTasksByProjectID(c *gin.Context){
+	id:=c.Param("id")
+	projectID,err:=strconv.Atoi(id)
+	if err!=nil{
+		p.logger.Errorf("%v",customErrors.ErrInvalidProjectId)
+		utils.Error(c,http.StatusBadRequest,customErrors.ErrInvalidProjectId.Error())
+		return 
+	}
+
+	ctx,cancel:=context.WithTimeout(c.Request.Context(),5*time.Second)
+	defer cancel()
+	tasks,err:=p.taskQueryService.GetTasksByProjectID(ctx,projectID)
+	if err!=nil{
+		p.logger.Errorf("%v",err)
+		utils.Error(c,http.StatusBadRequest,err.Error())
+		return 
+	}
+	p.logger.Infof("%v",tasks)
+	if len(tasks)==0{
+		utils.Success(c,http.StatusOK,map[string]any{
+		"data": "no tasks in the specified project" ,
+		"message":"request succeeded successfully",
+	})
+	return
+	}
+	utils.Success(c,http.StatusOK,map[string]any{
+		"data":tasks ,
+		"message":"request succeeded successfully",
+	})
+
 
 }

@@ -1,11 +1,7 @@
 package task
 
-import (
-	"context"
-	"time"
-
-	taskdb "github.com/Gkemhcs/taskpilot/internal/task/gen"
-)
+import  "time"
+	
 
 
 
@@ -30,6 +26,13 @@ type CreateTaskInput struct {
 }
 
 
-type TaskQueryService interface {
-   GetTasksByProjectID(ctx context.Context,projectID int)([]taskdb.Task,error)
+type UpdateTaskRequest struct {
+	ID          int64      `json:"id" binding:"required"`
+	Title       *string    `json:"title,omitempty"`
+	Description *string    `json:"description,omitempty"`
+	DueDate     *time.Time `json:"due_date,omitempty"`
+	Status      *string    `json:"status,omitempty"`
+	Priority    *string    `json:"priority,omitempty"`
 }
+
+
