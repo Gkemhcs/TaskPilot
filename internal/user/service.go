@@ -33,14 +33,12 @@ func (u *UserService) CreateUser(ctx context.Context, name, email, password stri
 	createUserParams := userdb.CreateUserParams{Name: name, HashedPassword: hashedPassword, Email: email}
 	_, err = u.userRepository.CreateUser(ctx, createUserParams)
 
-	var pqErr *pq.Error
-	if errors.As(err, &pqErr) {
-		if pqErr.Code == "23505" {
-			if pqErr.Constraint == "users_pkey" {
+	
+	if  IsErrorCode(err, customErrors.UniqueViolationErr) {
+		
 				return customErrors.ErrUserAlreadyExists
 			}
-		}
-	}
+		
 	if err != nil {
 		return err
 	}
@@ -90,4 +88,13 @@ func (u *UserService) GeneratePasswordHash(password string) (string, error) {
 // CheckHashedPassword compares a plain-text password with a hashed password.
 func (u *UserService) CheckHashedPassword(password string, hashedPassword string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+}
+
+
+
+func IsErrorCode(err error, errcode pq.ErrorCode) bool {
+        if pgerr, ok := err.(*pq.Error); ok {
+                return pgerr.Code == errcode
+        }
+        return false
 }

@@ -37,6 +37,17 @@ type UserHandler struct {
 	jwtManager  *auth.JWTManager
 }
 
+// CreateUser handles user registration
+// @Summary      Register a new user
+// @Description  Creates a new user in the system
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        user  body      User  true  "User registration input"
+// @Success      201   {object}  utils.SuccessResponse
+// @Failure      400   {object}  utils.ErrorResponse
+// @Failure      500   {object}  utils.ErrorResponse
+// @Router       /api/v1/users/ [post]
 func (u *UserHandler) CreateUser(c *gin.Context) {
 
 	var user User

@@ -163,6 +163,74 @@ func (q *Queries) GetTasksByProjectId(ctx context.Context, projectID int64) ([]T
 	return items, nil
 }
 
+const listTasksWithFilters = `-- name: ListTasksWithFilters :many
+SELECT id, project_id, assignee_id, title, description, status, priority, due_date, created_at, updated_at
+FROM tasks
+WHERE 
+    (project_id = COALESCE($1, project_id))
+  AND (assignee_id = COALESCE($2, assignee_id))
+  AND (status = ANY($3))
+  AND (priority = COALESCE($4, priority))
+  AND (due_date >= COALESCE($5, due_date))
+  AND (due_date <= COALESCE($6, due_date))
+ORDER BY due_date
+LIMIT $8 OFFSET $7
+`
+
+type ListTasksWithFiltersParams struct {
+	ProjectID   sql.NullInt64    `json:"project_id"`
+	AssigneeID  sql.NullInt64    `json:"assignee_id"`
+	Statuses    NullTaskStatus   `json:"statuses"`
+	Priority    NullTaskPriority `json:"priority"`
+	DueDateFrom sql.NullTime     `json:"due_date_from"`
+	DueDateTo   sql.NullTime     `json:"due_date_to"`
+	Offset      int32            `json:"offset"`
+	Limit       int32            `json:"limit"`
+}
+
+func (q *Queries) ListTasksWithFilters(ctx context.Context, arg ListTasksWithFiltersParams) ([]Task, error) {
+	rows, err := q.db.QueryContext(ctx, listTasksWithFilters,
+		arg.ProjectID,
+		arg.AssigneeID,
+		arg.Statuses,
+		arg.Priority,
+		arg.DueDateFrom,
+		arg.DueDateTo,
+		arg.Offset,
+		arg.Limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Task
+	for rows.Next() {
+		var i Task
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProjectID,
+			&i.AssigneeID,
+			&i.Title,
+			&i.Description,
+			&i.Status,
+			&i.Priority,
+			&i.DueDate,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateTask = `-- name: UpdateTask :execrows
 
 UPDATE tasks

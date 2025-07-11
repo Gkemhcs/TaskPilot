@@ -1,7 +1,15 @@
 package errors
 
-import "errors"
+import (
+	"errors"
 
+	"github.com/lib/pq"
+)
+
+
+const (
+    UniqueViolationErr = pq.ErrorCode("23505")
+)
 // Custom error variables for user authentication and request validation
 var USER_NOT_FOUND = errors.New("user not found")
 
@@ -33,6 +41,7 @@ var ErrUserIDNotFoundInContext = errors.New("UserID is missing from context, try
 var ErrProjectNotExist = errors.New("sorry the project name you are searching for isn't found")
 var ErrProjectIDNotExist = errors.New("sorry the project id you are searching for isn't found")
 var ErrProjectsEmpty = errors.New("projects are empty")
+var ErrProjectAlreadyExists=errors.New("project already exists")
 
 var ErrTokenExpired = errors.New("access token has expired")
 
@@ -46,5 +55,10 @@ var ErrorTaskTitleMissing=errors.New("task title is missing from request body")
 var ErrMissingProjectID=errors.New("project id is missing from request body")
 
 var ErrInvalidTaskID=errors.New("Invalid Task Id Entered")
+
+var ErrTaskAlreadyExists=errors.New("Task Already exists")
+
+var ErrTasksAreEmpty=errors.New("not tasks under the project id you mentioned")
+
 
 var ErrParentProjectIDNotFound=errors.New("The corresponding project id  doesnt exist")

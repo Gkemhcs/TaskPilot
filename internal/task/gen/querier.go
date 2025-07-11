@@ -14,6 +14,7 @@ type Querier interface {
 	GetAllTasks(ctx context.Context) ([]Task, error)
 	GetTaskById(ctx context.Context, id int64) (Task, error)
 	GetTasksByProjectId(ctx context.Context, projectID int64) ([]Task, error)
+	ListTasksWithFilters(ctx context.Context, arg ListTasksWithFiltersParams) ([]Task, error)
 	UpdateTask(ctx context.Context, arg UpdateTaskParams) (int64, error)
 }
 

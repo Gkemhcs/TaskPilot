@@ -1,0 +1,70 @@
+definitions:
+  user.User:
+    properties:
+      email:
+        description: User Email
+        type: string
+      name:
+        description: Username
+        type: string
+      password:
+        description: User password
+        type: string
+    required:
+    - email
+    - name
+    - password
+    type: object
+  utils.ErrorResponse:
+    properties:
+      error_code:
+        example: 400
+        type: integer
+      message:
+        example: missing email
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  utils.SuccessResponse:
+    properties:
+      data: {}
+      status:
+        example: success
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /api/v1/users/:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user in the system
+      parameters:
+      - description: User registration input
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/user.User'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/utils.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: Register a new user
+      tags:
+      - users
+swagger: "2.0"

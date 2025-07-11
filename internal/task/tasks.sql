@@ -34,3 +34,20 @@ SET
   priority = COALESCE(sqlc.narg('priority'), priority),
   updated_at = now()
 WHERE id = sqlc.arg('id');
+
+
+
+
+
+-- name: ListTasksWithFilters :many
+SELECT *
+FROM tasks
+WHERE 
+    (project_id = COALESCE(sqlc.narg('project_id'), project_id))
+  AND (assignee_id = COALESCE(sqlc.narg('assignee_id'), assignee_id))
+  AND (status = ANY(sqlc.narg('statuses')))
+  AND (priority = COALESCE(sqlc.narg('priority'), priority))
+  AND (due_date >= COALESCE(sqlc.narg('due_date_from'), due_date))
+  AND (due_date <= COALESCE(sqlc.narg('due_date_to'), due_date))
+ORDER BY due_date
+LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');

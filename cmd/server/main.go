@@ -1,3 +1,18 @@
+// @title           TaskPilot API
+// @version         1.0
+// @description     Task and Project Management Backend built with Go, Gin, and PostgreSQL.
+// @termsOfService  http://swagger.io/terms/
+
+// @contact.name   Koti Eswar Mani Gudi
+// @contact.email  gudikotieswarmani@gmail.com
+
+// @host      localhost:8080
+// @BasePath  /api/v1
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+
 package server
 
 import (
@@ -5,6 +20,7 @@ import (
 	"fmt"
 	"net/http"
 
+	_ "github.com/Gkemhcs/taskpilot/docs"
 	"github.com/Gkemhcs/taskpilot/internal/auth"
 	"github.com/Gkemhcs/taskpilot/internal/config"
 	"github.com/Gkemhcs/taskpilot/internal/middleware"
@@ -16,6 +32,8 @@ import (
 	userdb "github.com/Gkemhcs/taskpilot/internal/user/gen"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 // NewServer sets up the Gin router, registers routes, and starts the HTTP server.
@@ -28,17 +46,18 @@ func NewServer(config *config.Config, logger *logrus.Logger, dbConn *sql.DB) err
 
 	// Create API v1 group with custom logger middleware
 	v1 := router.Group("/api/v1", middleware.LoggerMiddleware(logger))
-	
+
+	// swagger docs route setup
+	router.GET("/api/v1/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
 	// Initialize user service with database connection
 	userService := user.NewUserService(userdb.New(dbConn))
 
-	
 	// Initialize project service with database connection
-	projectService:=project.NewProjectService(projectdb.New(dbConn))
+	projectService := project.NewProjectService(projectdb.New(dbConn))
 
-	
 	// Initialize task service with database connection
-	taskService:=task.NewTaskService(taskdb.New(dbConn))
+	taskService := task.NewTaskService(taskdb.New(dbConn))
 
 	// Initialize JWT manager for authentication
 	params := auth.CreateJwtManagerParams{
@@ -54,18 +73,17 @@ func NewServer(config *config.Config, logger *logrus.Logger, dbConn *sql.DB) err
 	// Register user-related routes under /api/v1/users
 	user.RegisterRoutes(v1, userHandler)
 
-	
 	// Create project handler with service, logger
-	projectHandler := project.NewProjectHandler(logger,projectService,taskService)
+	projectHandler := project.NewProjectHandler(logger, projectService, taskService)
 
 	// Register project-related routes under /api/v1/projects
-	project.RegisterProjectRoutes(v1, projectHandler,jwtManager)
+	project.RegisterProjectRoutes(v1, projectHandler, jwtManager)
 
 	// Create task handler with service, logger
-	taskHandler:=task.NewTaskHandler(*taskService,userService,logger,projectService)
+	taskHandler := task.NewTaskHandler(*taskService, userService, logger, projectService)
 
 	// Register task-related routes under /api/v1/tasks
-	task.RegisterTaskRoutes(v1,taskHandler,jwtManager)
+	task.RegisterTaskRoutes(v1, taskHandler, jwtManager)
 
 	// Health check endpoint
 	router.GET("/ping", func(c *gin.Context) {

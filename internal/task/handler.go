@@ -46,6 +46,7 @@ func RegisterTaskRoutes(router *gin.RouterGroup,taskHandler *TaskHandler,jwtMana
 			taskRouter.GET("/:id",taskHandler.GetTaskByID)
 			taskRouter.DELETE("/:id",taskHandler.DeleteTask)
 			taskRouter.PATCH("/",taskHandler.UpdateTask)	
+			taskRouter.GET("/filter",taskHandler.FilterTasks)
 
 	}
 }
@@ -91,7 +92,7 @@ func(t *TaskHandler) CreateTask(c *gin.Context){
 	_,err=t.projectService.GetProjectById(ctx,createTaskRequest.ProjectID)
 	if errors.Is(err,customErrors.ErrProjectIDNotExist){
 		t.logger.Errorf("%v",customErrors.ErrParentProjectIDNotFound)
-		utils.Error(c,http.StatusOK,customErrors.ErrParentProjectIDNotFound.Error())
+		utils.Error(c,http.StatusBadRequest,customErrors.ErrParentProjectIDNotFound.Error())
 		return 
 	
 	}
@@ -229,4 +230,24 @@ t.logger.Infof("task  %d updated successfully",req.ID)
 utils.Success(c,http.StatusOK,map[string]any{
 	"message":"task updated successfully",
 })
+}
+
+// internal/task/handler.go
+
+func (h *TaskHandler) FilterTasks(c *gin.Context) {
+	var req TaskFilterRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		h.logger.Errorf("Invalid filter query params: %v", err)
+		utils.Error(c, http.StatusBadRequest, "Invalid query parameters")
+		return
+	}
+
+	tasks, err := h.taskService.FilterTasks(c.Request.Context(), &req)
+	if err != nil {
+		h.logger.Errorf("Failed to fetch filtered tasks: %v", err)
+		utils.Error(c, http.StatusInternalServerError, "Could not filter tasks")
+		return
+	}
+
+	utils.Success(c, http.StatusOK, tasks)
 }
