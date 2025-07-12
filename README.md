@@ -25,18 +25,6 @@
 
 ## ⚙️ Features
 
-```mermaid
-graph TD
-  A[Client] -->|HTTP| B[API Gateway (Gin)]
-  B --> C[JWT Middleware]
-  C --> D[Business Logic (Services)]
-  D --> E[Data Access (Repositories via sqlc)]
-  E --> F[(PostgreSQL)]
-  G[Docker Compose] --> B
-  H[CI/CD (GitHub Actions)] --> G
-  I[Monitoring (Prometheus)] --> B
-  I --> F
-```
 
 * 🔐 **Secure JWT Auth**: Access + refresh token rotation with context-based auth middleware
 * ⏱ **Per-IP + Route-Based Rate Limiting**: Prevent abuse using `golang.org/x/time/rate`
@@ -70,10 +58,11 @@ graph TD
 ```mermaid
 graph TD
   A[Client] -->|HTTP| B[GIN HTTP Handlers]
-  B --> C[Middleware (JWT, Rate Limit, Prometheus)]
-  C --> D[Domain Services (Business Logic)]
-  D --> E[Repositories (sqlc per domain)]
+  B --> C[Middleware\n(JWT + Rate Limit + Prometheus)]
+  C --> D[Services Layer]
+  D --> E[Repository Layer\n(sqlc per domain)]
   E --> F[(PostgreSQL)]
+
 ```
 
 ---
