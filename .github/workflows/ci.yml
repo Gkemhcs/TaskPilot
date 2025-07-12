@@ -29,15 +29,16 @@ jobs:
         run: go mod download
 
       - name: Run tests
-        run: go test -v ./... -json > test-report.json
-
+        run: |
+            go install github.com/jstemmer/go-junit-report@latest
+            go test -v ./... | go-junit-report > report.xml
       - name: Publish Test Results
         uses: dorny/test-reporter@v1
         if: always() # Show even on failure
         with:
-          name: Go Tests
-          path: test-report.json
-          reporter: go-test
+          name: TaskPilot Backend Unit Tests
+          path: report.xml
+          reporter: java-junit
 
   build:
     name: Build and Push Docker Image
