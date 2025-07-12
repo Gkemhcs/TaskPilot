@@ -3,7 +3,7 @@
 ![Go](https://img.shields.io/badge/Go-1.21+-blue?logo=go)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue?logo=postgresql)
 ![Swagger](https://img.shields.io/badge/Swagger-API%20Docs-brightgreen?logo=swagger)
-![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-blueviolet?logo=github)
+![CI/CD](https://github.com/Gkemhcs/TaskPilot/actions/workflows/ci.yml/badge.svg)
 ![GCP](https://img.shields.io/badge/Deployed%20on-GCP-%23039BE5?logo=googlecloud)
 
 > TaskPilot is a clean, modular, and production-grade backend system designed for managing tasks and projects, built with Go, PostgreSQL, JWT Authentication, and REST APIs.
@@ -19,6 +19,20 @@
 - [📄 API Documentation](#-api-documentation)
 - [🧪 Testing Strategy](#-testing-strategy)
 - [📁 Project Structure](#-project-structure)
+## 📌 Table of Contents
+### 2. Run with Docker Compose (Recommended for local development)
+- [⚙️ Features](#%EF%B8%8F-features)
+1. Make sure Docker and Docker Compose are installed.
+2. Copy or set environment variables in your `.env` file or edit `docker-compose.yaml` as needed.
+3. Start all services:
+
+```bash
+docker-compose up --build
+```
+### 2. Run with Docker Compose (Recommended for local development)
+This will start the backend app, PostgreSQL database, and run migrations automatically. The API will be available at `http://localhost:8080` and Swagger UI at `http://localhost:8080/docs/index.html`.
+
+---
 - [🚀 Getting Started](#-getting-started)
 - [🌐 Deployment](#-deployment)
 - [📈 Future Roadmap](#-future-roadmap)
@@ -27,11 +41,32 @@
 ---
 
 ## ⚙️ Features
-
-- 🔐 **JWT Auth**: Access & refresh token-based authentication
-- 🧩 **Modular Design**: Clean separation of handlers, services, repositories
-- 📄 **Swagger Docs**: Auto-generated Swagger 3.0 API documentation
-- 🎯 **Task Filtering**: Query tasks by priority, status, or project
+  subgraph User
+    A[Client]
+  end
+  subgraph Backend
+    B[API Gateway (Gin)]
+    C[JWT Middleware]
+    D[Business Logic (Services)]
+    E[Data Access (Repositories)]
+  end
+  subgraph Database
+    F[(PostgreSQL)]
+  end
+  subgraph DevOps
+    G[Docker Compose]
+    H[CI/CD (GitHub Actions)]
+    I[Monitoring (Prometheus)]
+  end
+  A -->|HTTP| B
+  B --> C
+  C --> D
+  D --> E
+  E --> F
+  G --> B
+  H --> G
+  I --> B
+  I --> F
 - 🔄 **Token Refresh Endpoint**: Securely renew access tokens
 - 🧪 **Mock-based Unit Tests**: Thoroughly tested using `testify/mock`
 - 🗃️ **PostgreSQL Integration**: Relational schema with migrations
@@ -79,7 +114,7 @@ graph TD
 
 > Auto-generated using swaggo.
 
-📚 [Live Swagger UI](http://localhost:5000/docs/index.html)
+📚 [Live Swagger UI](http://localhost:8080/docs/index.html)
 
 ### Try Auth-Protected Endpoints
 
@@ -100,6 +135,10 @@ graph TD
 - `testify`
 - `testify/mock`
 - `httptest` (for HTTP handlers)
+
+🟢 **CI Integration:**
+- Automated tests run on every push and pull request via GitHub Actions.
+- Test results are published and displayed directly in the GitHub UI for easy review (see the "Checks" tab on your PRs and commits).
 
 
 ## 📁 Project Structure
