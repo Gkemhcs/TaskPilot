@@ -1,6 +1,10 @@
 package project
 
+import (
+	"context"
 
+	projectdb "github.com/Gkemhcs/taskpilot/internal/project/gen"
+)
 
 // Project represents a project entity with its basic attributes.
 // Used for creating, retrieving, and displaying project information.
@@ -40,4 +44,10 @@ type IProjectService interface {
 	UpdateProject()
 }
 
+
+type BulkCreateProjectService interface{
+	// CreateProjects creates multiple projects in bulk.
+	// Should accept a slice of project creation inputs and persist them.
+	CreateProject(ctx context.Context, project Project)(*projectdb.Project, error)
+}
 

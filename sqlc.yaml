@@ -22,4 +22,11 @@ packages:
     engine: "postgresql"
     emit_json_tags: true
     emit_interface: true
+  - name: "importerdb"
+    path: "internal/importer/gen"
+    queries: "internal/importer/import_jobs.sql"
+    schema: "internal/db/migrations"
+    engine: "postgresql"
+    emit_json_tags: true
+    emit_interface: true
 

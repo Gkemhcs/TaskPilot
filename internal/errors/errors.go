@@ -62,3 +62,13 @@ var ErrTasksAreEmpty=errors.New("not tasks under the project id you mentioned")
 
 
 var ErrParentProjectIDNotFound=errors.New("The corresponding project id  doesnt exist")
+
+
+
+var ErrCreatingImportJob = errors.New("failed to create import job")
+
+var ErrUploadingFile = errors.New("failed to upload file")
+
+var ErrInvalidFileType = errors.New("invalid file type, only Excel files are allowed")
+
+var ErrWhileEnqueuingImportJob = errors.New("failed to enqueue import job try after sometime")

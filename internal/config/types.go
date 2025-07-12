@@ -2,7 +2,22 @@ package config
 
 import "time"
 
-// Config holds all configuration values for the application.
+type StorageConfig struct {
+	BucketName string
+	Prefix     string
+	ProcessDir string
+	TempDir   string
+
+}
+
+type RabbitMQConfig struct {
+	Host     string
+	Port     string
+	Username string
+	Password string
+	Queue    string
+}
+
 type Config struct {
 	Port                string        // Port for the HTTP server
 	DBHost              string        // Database host
@@ -17,5 +32,6 @@ type Config struct {
 	RefreshTokenDuration time.Duration // Duration for JWT refresh tokens
 	RedisHost           string        // Redis host for caching
 	RedisPort           string        // Redis port for caching
+	StorageConfig       StorageConfig // Configuration for storage client
 }
 

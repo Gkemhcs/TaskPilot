@@ -20,14 +20,18 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/Gkemhcs/taskpilot/docs"
 	_ "github.com/Gkemhcs/taskpilot/docs"
 	"github.com/Gkemhcs/taskpilot/internal/auth"
 	"github.com/Gkemhcs/taskpilot/internal/config"
+	"github.com/Gkemhcs/taskpilot/internal/importer"
+	importerdb "github.com/Gkemhcs/taskpilot/internal/importer/gen"
 	"github.com/Gkemhcs/taskpilot/internal/middleware"
 	"github.com/Gkemhcs/taskpilot/internal/project"
 	projectdb "github.com/Gkemhcs/taskpilot/internal/project/gen"
+	"github.com/Gkemhcs/taskpilot/internal/storage"
 	"github.com/Gkemhcs/taskpilot/internal/task"
 	taskdb "github.com/Gkemhcs/taskpilot/internal/task/gen"
 	"github.com/Gkemhcs/taskpilot/internal/user"
@@ -123,6 +127,18 @@ func NewServer(config *config.Config, logger *logrus.Logger, dbConn *sql.DB) err
 
 	// Register task-related routes under /api/v1/tasks
 	task.RegisterTaskRoutes(v1, taskHandler, jwtManager)
+
+	// Initiialize importhandler and service 
+	ctx ,cancel:=context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	storageClient,err:=storage.StorageFactory(ctx, config.StorageType, config.StorageConfig)
+	importerRepo:=importerdb.New(dbConn)
+	publisher:=importer.NewRabbitMQPublisher(config.RabbitMQChannel, config.RabbitMQQueueName, config.RabbitMQExchange, config.RabbitMQRoutingKey)
+	importService := importer.NewImportService(storageClient, importerRepo)
+
+
+
+
 
 	// Health check endpoint
 	router.GET("/ping", func(c *gin.Context) {

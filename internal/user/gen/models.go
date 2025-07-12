@@ -9,7 +9,95 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"time"
+
+	"github.com/google/uuid"
 )
+
+type ImportJobStatus string
+
+const (
+	ImportJobStatusPending    ImportJobStatus = "pending"
+	ImportJobStatusInProgress ImportJobStatus = "in_progress"
+	ImportJobStatusCompleted  ImportJobStatus = "completed"
+	ImportJobStatusFailed     ImportJobStatus = "failed"
+)
+
+func (e *ImportJobStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = ImportJobStatus(s)
+	case string:
+		*e = ImportJobStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for ImportJobStatus: %T", src)
+	}
+	return nil
+}
+
+type NullImportJobStatus struct {
+	ImportJobStatus ImportJobStatus `json:"import_job_status"`
+	Valid           bool            `json:"valid"` // Valid is true if ImportJobStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullImportJobStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.ImportJobStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.ImportJobStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullImportJobStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.ImportJobStatus), nil
+}
+
+type ImportJobType string
+
+const (
+	ImportJobTypeProjectExcel ImportJobType = "project_excel"
+	ImportJobTypeTaskExcel    ImportJobType = "task_excel"
+)
+
+func (e *ImportJobType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = ImportJobType(s)
+	case string:
+		*e = ImportJobType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for ImportJobType: %T", src)
+	}
+	return nil
+}
+
+type NullImportJobType struct {
+	ImportJobType ImportJobType `json:"import_job_type"`
+	Valid         bool          `json:"valid"` // Valid is true if ImportJobType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullImportJobType) Scan(value interface{}) error {
+	if value == nil {
+		ns.ImportJobType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.ImportJobType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullImportJobType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.ImportJobType), nil
+}
 
 type ProjectColor string
 
@@ -139,6 +227,16 @@ func (ns NullTaskStatus) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	return string(ns.TaskStatus), nil
+}
+
+type ImportJob struct {
+	ID           uuid.UUID       `json:"id"`
+	FilePath     string          `json:"file_path"`
+	ImporterType ImportJobType   `json:"importer_type"`
+	Status       ImportJobStatus `json:"status"`
+	ErrorMessage sql.NullString  `json:"error_message"`
+	CreatedAt    sql.NullTime    `json:"created_at"`
+	UpdatedAt    sql.NullTime    `json:"updated_at"`
 }
 
 type Project struct {
