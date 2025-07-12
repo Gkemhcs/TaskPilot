@@ -54,9 +54,21 @@ services:
     networks:
       - taskpilot_net
     restart: unless-stopped
+  postgres_exporter:
+    image: prometheuscommunity/postgres-exporter
+    environment:
+      DATA_SOURCE_NAME: "postgresql://taskpilot:pilot1234@db:5432/taskpilot?sslmode=disable"
+    ports:
+      - "9187:9187"
+    depends_on:
+      - db
+    networks:
+      - taskpilot_net
+
+  
   prometheus_server:
     image: prom/prometheus
-    container_name: prometheus
+  
     ports:
       - "9090:9090"
     volumes:

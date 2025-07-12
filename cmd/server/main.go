@@ -53,7 +53,7 @@ func NewServer(config *config.Config, logger *logrus.Logger, dbConn *sql.DB) err
 	v1 := router.Group("/api/v1", middleware.LoggerMiddleware(logger), middleware.PrometheusMiddleware())
 
 	// Expose Prometheus metrics
-	v1.GET("/metrics", gin.WrapH(promhttp.Handler()))
+	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	// swagger docs route setup
 	router.GET("/api/v1/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
@@ -78,6 +78,7 @@ func NewServer(config *config.Config, logger *logrus.Logger, dbConn *sql.DB) err
 
 	// Create user handler with service, logger, and JWT manager
 	userHandler := user.NewUserHandler(userService, logger, jwtManager)
+	
 	// Register user-related routes under /api/v1/users
 	user.RegisterRoutes(v1, userHandler)
 

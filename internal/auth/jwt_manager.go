@@ -82,8 +82,9 @@ func (j *JWTManager) Generate(userID int, username string,email string ) (*Gener
 
 
 
-// GenerateAccess
-
+// GenerateAccessTokenFromRefresh generates a new access token from a valid refresh token.
+// It verifies the refresh token, extracts user claims, and issues a new access token.
+// Returns the new access token string or an error if the refresh token is invalid.
 func (j *JWTManager) GenerateAccessTokenFromRefresh(refreshToken string)(string,error){
 	userClaims,err:=j.VerifyRefreshToken(refreshToken)
 	if err!=nil{
@@ -98,6 +99,8 @@ func (j *JWTManager) GenerateAccessTokenFromRefresh(refreshToken string)(string,
 
 
 // VerifyRefreshToken  verifies the jwt refresh token is valid  and returns claims if it is valid
+// It checks the signing method and expiration, returning an error if the token is invalid.
+// It returns the user claims if the token is valid.
 func(j *JWTManager) VerifyRefreshToken(refreshToken string)(*UserClaims,error){
 
 	token, err := jwt.ParseWithClaims(
@@ -125,6 +128,8 @@ func(j *JWTManager) VerifyRefreshToken(refreshToken string)(*UserClaims,error){
 	return claims, nil
 }
 // Verify parses and validates a JWT token string and returns the claims if valid.
+// It checks the signing method and expiration, returning an error if the token is invalid.
+// If the token is valid, it returns the user claims contained in the token.
 func (j *JWTManager) Verify(tokenString string) (*UserClaims, error) {
 	token, err := jwt.ParseWithClaims(
 		tokenString,

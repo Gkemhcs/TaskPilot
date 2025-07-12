@@ -9,6 +9,6 @@ scrape_configs:
       group: 'backend'
 - job_name: 'taskpilot_db'
   static_configs:
-  - targets: [ 'db:5432' ]
+  - targets: [ 'postgres_exporter:9187' ]
     labels:
       group: 'database'
