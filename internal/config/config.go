@@ -20,6 +20,8 @@ func LoadConfig() *Config {
 	// Set default values for configuration
 	viper.SetDefault("PORT", 8080)
 	viper.SetDefault("HOST", "0.0.0.0")
+	viper.SetDefault("REDIS_HOST", "localhost")
+	viper.SetDefault("REDIS_PORT", "6379")
 	viper.SetDefault("ACCESS_TOKEN_DURATION", "12h")
 	viper.SetDefault("REFRESH_TOKEN_DURATION", "24h")
 	viper.SetDefault("CONTEXT_TIMEOUT", "10s")
@@ -47,5 +49,7 @@ func LoadConfig() *Config {
 		HOST:                viper.GetString("HOST"),
 		AccessTokenDuration: accessTokenDuration,
 		RefreshTokenDuration: refreshTokenDuration,
+		RedisHost: 		 viper.GetString("REDIS_HOST"),
+		RedisPort: 		 viper.GetString("REDIS_PORT"),
 	}
 }

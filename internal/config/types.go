@@ -15,5 +15,7 @@ type Config struct {
 	JWTRefreshTokenSecret 	string  // Secret key for JWT Refresh Key signing
 	AccessTokenDuration time.Duration // Duration for JWT access tokens
 	RefreshTokenDuration time.Duration // Duration for JWT refresh tokens
+	RedisHost           string        // Redis host for caching
+	RedisPort           string        // Redis port for caching
 }
 

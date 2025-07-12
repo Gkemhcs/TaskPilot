@@ -1,6 +1,17 @@
 name: taskpilot-backend
 services:
 
+  redis_server:
+    image: redis:alpine
+    networks:
+      - taskpilot_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   db:
     image: postgres:15-alpine
     environment:
@@ -44,6 +55,8 @@ services:
       - PORT=8080
       - JWT_ACCESS_TOKEN_SECRET=iri2rji2mdkwmd2j9ri3
       - JWT_REFRESH_TOKEN_SECRET=iri2rji2mdkwmd2j9ri3
+      - REDIS_HOST=redis_server
+      - REDIS_PORT=6379
     ports:
       - "8080:8080"
     depends_on:
@@ -51,6 +64,8 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
+      redis_server:
+        condition: service_healthy
     networks:
       - taskpilot_net
     restart: unless-stopped

@@ -16,6 +16,7 @@
 package server
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"net/http"
@@ -33,6 +34,7 @@ import (
 	userdb "github.com/Gkemhcs/taskpilot/internal/user/gen"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -41,6 +43,8 @@ import (
 // NewServer sets up the Gin router, registers routes, and starts the HTTP server.
 // It takes configuration, logger, and database connection as input.
 func NewServer(config *config.Config, logger *logrus.Logger, dbConn *sql.DB) error {
+
+	
 	// Set Gin to release mode for production
 	gin.SetMode(gin.ReleaseMode)
 	// Create a new Gin router with default middleware (logger, recovery)
@@ -49,14 +53,40 @@ func NewServer(config *config.Config, logger *logrus.Logger, dbConn *sql.DB) err
 	docs.SwaggerInfo.Host = fmt.Sprintf("%s:%s", config.HOST, config.Port)
 	
 
-	// Create API v1 group with custom logger middleware
-	v1 := router.Group("/api/v1", middleware.LoggerMiddleware(logger), middleware.PrometheusMiddleware())
+	redisAddr := fmt.Sprintf("%s:%s", config.RedisHost, config.RedisPort)
 
+	
+	redisClient := redis.NewClient(&redis.Options{
+		Addr: redisAddr,
+	})
+
+	pong, err := redisClient.Ping(context.Background()).Result()
+	if err != nil {
+		logger.Fatal("❌ Redis connection failed:", err)
+	} else {
+		logger.Info("✅ Redis connected:", pong)
+	}
+
+	//Initialising ratelimiter middleware with Redis client and logger
+	rateLimiterMiddleware, err := middleware.RateLimiterMiddleware(redisClient, logger)
+	if err != nil {
+		panic(fmt.Errorf("failed to create rate limiter middleware: %w", err))
+	}else{
+		logger.Info("Rate limiter middleware initialized successfully")
+	}
+
+	
+
+	// Create API v1 group with custom logger middleware
+	v1 := router.Group("/api/v1",  middleware.LoggerMiddleware(logger), middleware.PrometheusMiddleware())
+	v1.Use(rateLimiterMiddleware)
 	// Expose Prometheus metrics
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	// swagger docs route setup
 	router.GET("/api/v1/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+
 
 	// Initialize user service with database connection
 	userService := user.NewUserService(userdb.New(dbConn))
