@@ -1,0 +1,72 @@
+name: taskpilot-backend
+services:
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: taskpilot
+      POSTGRES_PASSWORD: pilot1234
+      POSTGRES_DB: taskpilot
+      POSTGRES_INITDB_ARGS: "--auth=md5"
+    networks:
+      - taskpilot_net
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U taskpilot"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  migrate:
+    image: migrate/migrate:latest
+    volumes:
+      - ./internal/db/migrations:/migrations
+    command:
+      ["-path", "/migrations", "-database", "postgres://taskpilot:pilot1234@db:5432/taskpilot?sslmode=disable", "up"]
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - taskpilot_net
+
+  app:
+    build: .
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=taskpilot
+      - DB_PASSWORD=pilot1234
+      - DB_NAME=taskpilot
+      - HOST=0.0.0.0
+      - PORT=8080
+      - JWT_ACCESS_TOKEN_SECRET=iri2rji2mdkwmd2j9ri3
+      - JWT_REFRESH_TOKEN_SECRET=iri2rji2mdkwmd2j9ri3
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - taskpilot_net
+    restart: unless-stopped
+  prometheus_server:
+    image: prom/prometheus
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - taskpilot_net
+    restart: unless-stopped
+
+networks:
+  taskpilot_net:
+
+volumes:
+  postgres_data:

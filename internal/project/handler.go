@@ -55,6 +55,8 @@ func RegisterProjectRoutes(r *gin.RouterGroup, handler *ProjectHandler, jwtManag
 // @Failure      400      {object}  map[string]interface{}
 // @Failure      500      {object}  map[string]interface{}
 // @Router       /api/v1/projects/ [post]
+// @Security BearerAuth
+
 func (p *ProjectHandler) CreateProject(c *gin.Context) {
 
 	var project Project
@@ -111,6 +113,7 @@ func (p *ProjectHandler) CreateProject(c *gin.Context) {
 // @Success      200  {object}  map[string]interface{}
 // @Failure      400  {object}  map[string]interface{}
 // @Router       /api/v1/projects/{id} [get]
+// @Security BearerAuth
 func (p *ProjectHandler) GetProjectById(c *gin.Context) {
 	idParam := c.Param("id")
 	projectId, err := strconv.Atoi(idParam)
@@ -121,6 +124,7 @@ func (p *ProjectHandler) GetProjectById(c *gin.Context) {
 	}
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()
+	
 	project, err := p.projectService.GetProjectById(ctx, projectId)
 	if err != nil {
 		p.logger.Errorf("%v", err)
@@ -144,6 +148,7 @@ func (p *ProjectHandler) GetProjectById(c *gin.Context) {
 // @Success      200   {object}  map[string]interface{}
 // @Failure      400   {object}  map[string]interface{}
 // @Router       /api/v1/projects/names/ [get]
+// @Security BearerAuth
 func (p *ProjectHandler) GetProjectByName(c *gin.Context) {
 	val, exists := c.Get("userID")
 	if !exists {
@@ -182,19 +187,20 @@ func (p *ProjectHandler) GetProjectByName(c *gin.Context) {
 // @Success      200  {object}  map[string]interface{}
 // @Failure      400  {object}  map[string]interface{}
 // @Router       /api/v1/projects/ [get]
+// @Security BearerAuth
 func (p *ProjectHandler) GetProjectsByUserId(c *gin.Context) {
 
 	val, exists := c.Get("userID")
 	if !exists {
 		p.logger.Errorf("%v", customErrors.ErrUserIDNotFoundInContext)
-		utils.Error(c, http.StatusBadGateway, "unauthenticated: user ID not found")
+		utils.Error(c, http.StatusBadRequest, "unauthenticated: user ID not found")
 		return
 	}
 
 	userID, ok := val.(int)
 	if !ok {
 		p.logger.Errorf("%v", customErrors.ErrInvalidUserId)
-		utils.Error(c, http.StatusInternalServerError, "invalid user ID type")
+		utils.Error(c, http.StatusBadRequest, "invalid user ID type")
 		return
 	}
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
@@ -225,6 +231,7 @@ func (p *ProjectHandler) GetProjectsByUserId(c *gin.Context) {
 // @Success      200     {object}  map[string]interface{}
 // @Failure      400     {object}  map[string]interface{}
 // @Router       /api/v1/projects/{id} [put]
+// @Security BearerAuth
 func (p *ProjectHandler) UpdateProject(c *gin.Context) {
 
 }
@@ -238,6 +245,7 @@ func (p *ProjectHandler) UpdateProject(c *gin.Context) {
 // @Success      200  {object}  map[string]interface{}
 // @Failure      400  {object}  map[string]interface{}
 // @Router       /api/v1/projects/{id} [delete]
+// @Security BearerAuth
 func (p *ProjectHandler) DeleteProject(c *gin.Context) {
 	idParam := c.Param("id")
 	projectId, err := strconv.Atoi(idParam)
@@ -271,6 +279,7 @@ func (p *ProjectHandler) DeleteProject(c *gin.Context) {
 // @Success      200  {object}  map[string]interface{}
 // @Failure      400  {object}  map[string]interface{}
 // @Router       /api/v1/projects/{id}/tasks [get]
+// @Security BearerAuth
 func (p *ProjectHandler) GetTasksByProjectID(c *gin.Context) {
 	id := c.Param("id")
 	projectID, err := strconv.Atoi(id)

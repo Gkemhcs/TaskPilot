@@ -12,7 +12,7 @@
 // @securityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization
-
+// @description Type "Bearer <your-token>" to authorize
 package server
 
 import (
@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/Gkemhcs/taskpilot/docs"
 	_ "github.com/Gkemhcs/taskpilot/docs"
 	"github.com/Gkemhcs/taskpilot/internal/auth"
 	"github.com/Gkemhcs/taskpilot/internal/config"
@@ -31,6 +32,7 @@ import (
 	"github.com/Gkemhcs/taskpilot/internal/user"
 	userdb "github.com/Gkemhcs/taskpilot/internal/user/gen"
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -44,8 +46,14 @@ func NewServer(config *config.Config, logger *logrus.Logger, dbConn *sql.DB) err
 	// Create a new Gin router with default middleware (logger, recovery)
 	router := gin.Default()
 
+	docs.SwaggerInfo.Host = fmt.Sprintf("%s:%s", config.HOST, config.Port)
+	
+
 	// Create API v1 group with custom logger middleware
-	v1 := router.Group("/api/v1", middleware.LoggerMiddleware(logger))
+	v1 := router.Group("/api/v1", middleware.LoggerMiddleware(logger), middleware.PrometheusMiddleware())
+
+	// Expose Prometheus metrics
+	v1.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	// swagger docs route setup
 	router.GET("/api/v1/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

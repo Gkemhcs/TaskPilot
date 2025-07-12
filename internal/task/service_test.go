@@ -30,6 +30,31 @@ func TestMain(m *testing.M) {
 func mockDuplicateError() error {
 	return &pq.Error{Code: "23505"}
 }
+
+func TestDeref(t *testing.T) {
+	t.Run("should return empty string for nil pointer", func(t *testing.T) {
+		var s *string
+		assert.Equal(t, "", deref(s))
+	})
+
+	t.Run("should return string value when pointer is non-nil", func(t *testing.T) {
+		val := "hello"
+		assert.Equal(t, "hello", deref(&val))
+	})
+}
+
+func TestDerefTime(t *testing.T) {
+	t.Run("should return zero time for nil pointer", func(t *testing.T) {
+		var tPtr *time.Time
+		assert.Equal(t, time.Time{}, derefTime(tPtr))
+	})
+
+	t.Run("should return time value when pointer is non-nil", func(t *testing.T) {
+		now := time.Now()
+		assert.Equal(t, now, derefTime(&now))
+	})
+}
+
 func TestGetStatus(t *testing.T) {
 	testCases := []struct {
 		testName       string
@@ -233,7 +258,6 @@ func TestCreateTask(t *testing.T) {
 			returnedError:  mockDuplicateError(),              // this is what the DB would return
 			expectedOutput: &taskdb.Task{},                    // likely ignored if error happens
 		},
-		
 	}
 
 	for _, tc := range testCases {
@@ -260,191 +284,181 @@ func TestCreateTask(t *testing.T) {
 
 }
 
+func TestGetTaskByID(t *testing.T) {
 
-func TestGetTaskByID(t *testing.T){
-
-	testCases:=[]struct{
-			testName string 
-			taskID int 
-			expectedTaskID int64
-			returnOutput taskdb.Task
-			expectedOutput *taskdb.Task
-			expectedError error 
-			returnError error 
-			
+	testCases := []struct {
+		testName       string
+		taskID         int
+		expectedTaskID int64
+		returnOutput   taskdb.Task
+		expectedOutput *taskdb.Task
+		expectedError  error
+		returnError    error
 	}{
 		{
-			testName: "valid task id",
-			taskID: 101,
+			testName:       "valid task id",
+			taskID:         101,
 			expectedTaskID: 101,
 			returnOutput: taskdb.Task{
-				ID: 101,
+				ID:    101,
 				Title: "valid task",
 			},
 			expectedOutput: &taskdb.Task{
-				ID: 101,
+				ID:    101,
 				Title: "valid task",
 			},
 			expectedError: nil,
-			returnError: nil,
+			returnError:   nil,
 		},
 		{
-			testName: "invalid task id",
-			taskID: 1001,
+			testName:       "invalid task id",
+			taskID:         1001,
 			expectedTaskID: 1001,
-			returnOutput: taskdb.Task{},
-			expectedOutput: nil ,
-			expectedError: customErrors.ErrTaskNotFound,
-			returnError: sql.ErrNoRows,
+			returnOutput:   taskdb.Task{},
+			expectedOutput: nil,
+			expectedError:  customErrors.ErrTaskNotFound,
+			returnError:    sql.ErrNoRows,
 		},
 		{
-			testName: "db error",
-			taskID: 1001,
+			testName:       "db error",
+			taskID:         1001,
 			expectedTaskID: 1001,
-			returnOutput: taskdb.Task{},
-			expectedOutput: nil ,
-			expectedError: errors.New("db connection failed"),
-			returnError: errors.New("db connection failed"),
+			returnOutput:   taskdb.Task{},
+			expectedOutput: nil,
+			expectedError:  errors.New("db connection failed"),
+			returnError:    errors.New("db connection failed"),
 		},
-		}
-
-		for _,tc := range testCases{
-			t.Run(tc.testName,func(t *testing.T){
-				mockRepo.Calls=nil 
-				mockRepo.ExpectedCalls=nil 
-				mockRepo.On("GetTaskById",mock.Anything,tc.expectedTaskID).Return(tc.returnOutput,tc.returnError)
-
-
-				ctx:=context.TODO()
-				result,err:=taskService.GetTaskByID(ctx,tc.taskID)
-				if tc.returnError!=nil{
-					assert.Equal(t,err,tc.expectedError)
-				}else{
-					assert.Equal(t,tc.expectedOutput.Title,result.Title)
-				}
-				mockRepo.AssertCalled(t,"GetTaskById",mock.Anything,tc.expectedTaskID)
-
-			})
-		}
-}
-
-func TestGetTasksByProjectId(t *testing.T){
-
-	testCases:=[]struct{
-		testName string 
-		projectID int 
-		expectedProjectID int64
-		returnResult []taskdb.Task
-		expectedResult []taskdb.Task
-		returnError error 
-		expectedError error 
-	}{
-		{
-			testName: "Valid Project Id",
-			projectID: 24,
-			expectedProjectID: 24,
-			returnResult: []taskdb.Task{
-				{
-					Title: "task1",
-				},{
-					Title:"task2",
-				},
-
-			},
-			expectedResult: []taskdb.Task{
-				{
-					Title: "task1",
-				},{
-					Title:"task2",
-				},
-
-			},
-			returnError: nil,
-			expectedError: nil,
-		},
-		{
-			testName: "Empty Tasks",
-			projectID: 200,
-			expectedProjectID: 200,
-			returnResult: nil,
-			expectedResult: nil,
-			expectedError: customErrors.ErrTasksAreEmpty,
-			returnError: sql.ErrNoRows,
-		},
-		{
-			testName: "DB Error",
-			projectID: 200,
-			expectedProjectID: 200,
-			returnResult: nil,
-			expectedResult: nil,
-			expectedError:errors.New("db error"),
-			returnError: errors.New("db error"),
-		},
-
-
 	}
 
-	for _,tc := range testCases{
-		t.Run(tc.testName,func(t *testing.T){
-			mockRepo.Calls=nil 
-			mockRepo.ExpectedCalls=nil 
-			mockRepo.On("GetTasksByProjectId",mock.Anything,tc.expectedProjectID).Return(tc.returnResult,tc.returnError)
+	for _, tc := range testCases {
+		t.Run(tc.testName, func(t *testing.T) {
+			mockRepo.Calls = nil
+			mockRepo.ExpectedCalls = nil
+			mockRepo.On("GetTaskById", mock.Anything, tc.expectedTaskID).Return(tc.returnOutput, tc.returnError)
 
-			result,err:=taskService.GetTasksByProjectID(context.TODO(),tc.projectID)
-			if tc.expectedError!=nil{
-				assert.Equal(t,err,tc.expectedError)
-			}else{
-				assert.NoError(t,err)
-				assert.Equal(t,result,tc.expectedResult)
+			ctx := context.TODO()
+			result, err := taskService.GetTaskByID(ctx, tc.taskID)
+			if tc.returnError != nil {
+				assert.Equal(t, err, tc.expectedError)
+			} else {
+				assert.Equal(t, tc.expectedOutput.Title, result.Title)
 			}
-			mockRepo.AssertCalled(t,"GetTasksByProjectId",mock.Anything,tc.expectedProjectID)
+			mockRepo.AssertCalled(t, "GetTaskById", mock.Anything, tc.expectedTaskID)
+
 		})
 	}
 }
 
+func TestGetTasksByProjectId(t *testing.T) {
 
-func TestDeleteTask(t *testing.T){
-
-	testCases:=[]struct{
-		testName string 
-		taskID int 
-		expectedTaskID int64 
-		expectedErr error 
-		returnError error 
-		returnResult int64
-
+	testCases := []struct {
+		testName          string
+		projectID         int
+		expectedProjectID int64
+		returnResult      []taskdb.Task
+		expectedResult    []taskdb.Task
+		returnError       error
+		expectedError     error
 	}{
-			{
-				testName:"valid task id",
-				taskID: 103,
-				expectedTaskID: 103,
-				returnResult: 1,
-				expectedErr: nil,
-				returnError: nil,
+		{
+			testName:          "Valid Project Id",
+			projectID:         24,
+			expectedProjectID: 24,
+			returnResult: []taskdb.Task{
+				{
+					Title: "task1",
+				}, {
+					Title: "task2",
+				},
 			},
-			{
-				testName:"invalid task id",
-				taskID: 103,
-				expectedTaskID: 103,
-				returnResult: 0,
-				expectedErr: customErrors.ErrTaskNotFound,
-				returnError: nil,
+			expectedResult: []taskdb.Task{
+				{
+					Title: "task1",
+				}, {
+					Title: "task2",
+				},
 			},
+			returnError:   nil,
+			expectedError: nil,
+		},
+		{
+			testName:          "Empty Tasks",
+			projectID:         200,
+			expectedProjectID: 200,
+			returnResult:      nil,
+			expectedResult:    nil,
+			expectedError:     customErrors.ErrTasksAreEmpty,
+			returnError:       sql.ErrNoRows,
+		},
+		{
+			testName:          "DB Error",
+			projectID:         200,
+			expectedProjectID: 200,
+			returnResult:      nil,
+			expectedResult:    nil,
+			expectedError:     errors.New("db error"),
+			returnError:       errors.New("db error"),
+		},
 	}
 
+	for _, tc := range testCases {
+		t.Run(tc.testName, func(t *testing.T) {
+			mockRepo.Calls = nil
+			mockRepo.ExpectedCalls = nil
+			mockRepo.On("GetTasksByProjectId", mock.Anything, tc.expectedProjectID).Return(tc.returnResult, tc.returnError)
 
-	for _,tc := range testCases{
-		t.Run(tc.testName,func(t *testing.T){
-			mockRepo.Calls=nil 
-			mockRepo.ExpectedCalls=nil 
-			mockRepo.On("DeleteTask",mock.Anything,tc.expectedTaskID).Return(tc.returnResult,tc.returnError)
-			err:=taskService.DeleteTask(context.TODO(),tc.taskID)
-			if tc.expectedErr!=nil{
-				assert.Equal(t,tc.expectedErr,err)
-			}else{
-				assert.NoError(t,err)
+			result, err := taskService.GetTasksByProjectID(context.TODO(), tc.projectID)
+			if tc.expectedError != nil {
+				assert.Equal(t, err, tc.expectedError)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, result, tc.expectedResult)
 			}
-			mockRepo.AssertCalled(t,"DeleteTask",mock.Anything,tc.expectedTaskID)
+			mockRepo.AssertCalled(t, "GetTasksByProjectId", mock.Anything, tc.expectedProjectID)
+		})
+	}
+}
+
+func TestDeleteTask(t *testing.T) {
+
+	testCases := []struct {
+		testName       string
+		taskID         int
+		expectedTaskID int64
+		expectedErr    error
+		returnError    error
+		returnResult   int64
+	}{
+		{
+			testName:       "valid task id",
+			taskID:         103,
+			expectedTaskID: 103,
+			returnResult:   1,
+			expectedErr:    nil,
+			returnError:    nil,
+		},
+		{
+			testName:       "invalid task id",
+			taskID:         103,
+			expectedTaskID: 103,
+			returnResult:   0,
+			expectedErr:    customErrors.ErrTaskNotFound,
+			returnError:    nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.testName, func(t *testing.T) {
+			mockRepo.Calls = nil
+			mockRepo.ExpectedCalls = nil
+			mockRepo.On("DeleteTask", mock.Anything, tc.expectedTaskID).Return(tc.returnResult, tc.returnError)
+			err := taskService.DeleteTask(context.TODO(), tc.taskID)
+			if tc.expectedErr != nil {
+				assert.Equal(t, tc.expectedErr, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			mockRepo.AssertCalled(t, "DeleteTask", mock.Anything, tc.expectedTaskID)
 		})
 	}
 

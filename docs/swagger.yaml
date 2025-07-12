@@ -1,4 +1,53 @@
 definitions:
+  project.Project:
+    properties:
+      color:
+        description: Color label for the project (e.g., for UI)
+        type: string
+      description:
+        description: Description of the project
+        type: string
+      name:
+        description: Name of the project
+        type: string
+      user_id:
+        description: ID of the user who owns the project
+        type: integer
+    type: object
+  task.CreateTaskRequest:
+    properties:
+      assignee_email:
+        type: string
+      description:
+        type: string
+      due_date:
+        type: string
+      priority:
+        type: string
+      project_id:
+        type: integer
+      status:
+        type: string
+      title:
+        type: string
+    type: object
+  task.UpdateTaskRequest:
+    properties:
+      description:
+        type: string
+      due_date:
+        type: string
+      id:
+        type: integer
+      priority:
+        type: string
+      status:
+        type: string
+      title:
+        type: string
+    required:
+    - id
+    type: object
   user.User:
     properties:
       email:
@@ -37,6 +86,380 @@ definitions:
 info:
   contact: {}
 paths:
+  /api/v1/projects/:
+    get:
+      description: Retrieves all projects for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get all projects for user
+      tags:
+      - projects
+  /api/v1/projects/{id}:
+    delete:
+      description: Deletes a project by its unique ID
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete project
+      tags:
+      - projects
+    get:
+      description: Retrieves a project by its unique ID
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get project by ID
+      tags:
+      - projects
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing project by its ID
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Project update input
+        in: body
+        name: project
+        required: true
+        schema:
+          $ref: '#/definitions/project.Project'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update project
+      tags:
+      - projects
+  /api/v1/projects/{id}/tasks:
+    get:
+      description: Retrieves all tasks for a given project ID
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get tasks by project ID
+      tags:
+      - projects
+  /api/v1/projects/names/:
+    get:
+      description: Retrieves a project by its name for the authenticated user
+      parameters:
+      - description: Project Name
+        in: query
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get project by name
+      tags:
+      - projects
+  /api/v1/tasks/:
+    get:
+      description: Retrieves all tasks for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get all tasks
+      tags:
+      - tasks
+    patch:
+      consumes:
+      - application/json
+      description: Updates an existing task
+      parameters:
+      - description: Task update input
+        in: body
+        name: task
+        required: true
+        schema:
+          $ref: '#/definitions/task.UpdateTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update task
+      tags:
+      - tasks
+    post:
+      consumes:
+      - application/json
+      description: Creates a new task for the authenticated user
+      parameters:
+      - description: Task creation input
+        in: body
+        name: task
+        required: true
+        schema:
+          $ref: '#/definitions/task.CreateTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new task
+      tags:
+      - tasks
+  /api/v1/tasks/{id}:
+    delete:
+      description: Deletes a task by its unique ID
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete task
+      tags:
+      - tasks
+    get:
+      description: Retrieves a task by its unique ID
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get task by ID
+      tags:
+      - tasks
+  /api/v1/tasks/filter:
+    get:
+      description: Filters tasks based on query parameters
+      parameters:
+      - in: query
+        name: assignee_id
+        type: integer
+      - in: query
+        name: due_date_from
+        type: string
+      - in: query
+        name: due_date_to
+        type: string
+      - in: query
+        name: limit
+        type: integer
+      - in: query
+        name: offset
+        type: integer
+      - in: query
+        name: priority
+        type: string
+      - in: query
+        name: project_id
+        type: integer
+      - collectionFormat: csv
+        description: comma-separated in URL
+        in: query
+        items:
+          type: string
+        name: statuses
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Filter tasks
+      tags:
+      - tasks
   /api/v1/users/:
     post:
       consumes:

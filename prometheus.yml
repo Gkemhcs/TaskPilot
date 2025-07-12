@@ -1,0 +1,14 @@
+global:
+  scrape_interval: 10s
+
+scrape_configs:
+- job_name: 'taskpilot_app'
+  static_configs:
+  - targets: [ 'app:8080' ]
+    labels:
+      group: 'backend'
+- job_name: 'taskpilot_db'
+  static_configs:
+  - targets: [ 'db:5432' ]
+    labels:
+      group: 'database'

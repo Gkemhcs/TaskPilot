@@ -43,7 +43,7 @@ type UserHandler struct {
 // @Tags         users
 // @Accept       json
 // @Produce      json
-// @Param        user  body      User  true  "User registration input"
+// @Param        user  body      User true  "User registration input"
 // @Success      201   {object}  utils.SuccessResponse
 // @Failure      400   {object}  utils.ErrorResponse
 // @Failure      500   {object}  utils.ErrorResponse
@@ -88,6 +88,18 @@ func (u *UserHandler) CreateUser(c *gin.Context) {
 		"status_code": http.StatusCreated,
 	})
 }
+
+// LoginUser handles user login
+// @Summary      Login user
+// @Description  Authenticates a user and returns JWT tokens
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        user  body      User true  "User login input"
+// @Success      200   {object}  map[string]interface{}
+// @Failure      400   {object}  utils.ErrorResponse
+// @Failure      500   {object}  utils.ErrorResponse
+// @Router       /api/v1/users/login [post]
 
 func (u *UserHandler) LoginUser(c *gin.Context) {
 	var user User
@@ -137,6 +149,18 @@ func (u *UserHandler) LoginUser(c *gin.Context) {
 	})
 
 }
+
+// GenerateAccessTokenFromRefreshToken generates a new access token from a refresh token
+// @Summary      Generate access token from refresh token
+// @Description  Generates a new access token using a valid refresh token
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        refreshToken  body      RefreshRequest true  "Refresh token input"
+// @Success      200   {object}  map[string]interface{}
+// @Failure      400   {object}  utils.ErrorResponse
+// @Failure      500   {object}  utils.ErrorResponse
+// @Router       /api/v1/users/refresh [post]
 
 func (u *UserHandler) GenerateAccessTokenFromRefreshToken(c *gin.Context) {
 	var request RefreshRequest
