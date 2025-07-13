@@ -31,6 +31,28 @@ services:
       retries: 5
       start_period: 5s
 
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - taskpilot_net
+    healthcheck:
+    # use the flag --erlang-cookie if setting the erlang 
+    # cookie was necessary (comment by red-riding-hood)
+    # test: rabbitmq-diagnostics -q ping --erlang-cookie "mycookie"
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+
   migrate:
     image: migrate/migrate:latest
     volumes:
@@ -43,8 +65,11 @@ services:
     networks:
       - taskpilot_net
 
+
   app:
     build: .
+    volumes:
+      - ./key.json:/app/key.json
     environment:
       - DB_HOST=db
       - DB_PORT=5432
@@ -57,6 +82,13 @@ services:
       - JWT_REFRESH_TOKEN_SECRET=iri2rji2mdkwmd2j9ri3
       - REDIS_HOST=redis_server
       - REDIS_PORT=6379
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - STORAGE_TYPE=gcp
+      - TEMP_DIR=/tmp
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/key.json
+      - PROCESS_DIR=/tmp/processed
+      - GCP_BUCKET=taskpilot-backend-data
+      - GCP_PREFIX=imports/
     ports:
       - "8080:8080"
     depends_on:
@@ -66,6 +98,9 @@ services:
         condition: service_completed_successfully
       redis_server:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+  
     networks:
       - taskpilot_net
     restart: unless-stopped
@@ -80,6 +115,63 @@ services:
     networks:
       - taskpilot_net
 
+
+  task-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.taskworker
+    volumes:
+      - ./key.json:/app/key.json
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=taskpilot
+      - DB_PASSWORD=pilot1234
+      - DB_NAME=taskpilot
+      - STORAGE_TYPE=gcp
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/key.json
+      - TEMP_DIR=/tmp
+      - PROCESS_DIR=/tmp/processed
+      - GCP_BUCKET=taskpilot-backend-data
+      - GCP_PREFIX=imports/
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    networks:
+      - taskpilot_net
+    restart: unless-stopped
+
+  project-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.projectworker
+    volumes:
+      - ./key.json:/app/key.json
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=taskpilot
+      - DB_PASSWORD=pilot1234
+      - DB_NAME=taskpilot
+      - STORAGE_TYPE=gcp
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/key.json
+      - TEMP_DIR=/tmp
+      - PROCESS_DIR=/tmp/processed
+      - GCP_BUCKET=taskpilot-backend-data
+      - GCP_PREFIX=imports/
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+  
+    networks:
+      - taskpilot_net
+    restart: unless-stopped
   
   prometheus_server:
     image: prom/prometheus

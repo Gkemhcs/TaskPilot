@@ -22,7 +22,7 @@ func RateLimiterMiddleware(redisClient *redis.Client, logger *logrus.Logger) (gi
 
 	rate := limiter.Rate{
 		Period: 1 * time.Minute,
-		Limit:  3,
+		Limit:  300,
 	}
 
 	// Create Limiter store backed by Redis
@@ -61,8 +61,6 @@ func RateLimiterMiddleware(redisClient *redis.Client, logger *logrus.Logger) (gi
 		loc, _ := time.LoadLocation("Asia/Kolkata") // IST location
 		resetTime := time.Unix(limitCtx.Reset, 0).In(loc).Format("Mon, 02 Jan 2006 15:04:05 MST")
 		c.Header("X-RateLimit-Reset", resetTime)
-
-		
 
 		if limitCtx.Reached {
 			logger.WithFields(logrus.Fields{

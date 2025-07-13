@@ -13,6 +13,92 @@ import (
 	"github.com/google/uuid"
 )
 
+type ExportJobStatus string
+
+const (
+	ExportJobStatusPending    ExportJobStatus = "pending"
+	ExportJobStatusProcessing ExportJobStatus = "processing"
+	ExportJobStatusCompleted  ExportJobStatus = "completed"
+	ExportJobStatusFailed     ExportJobStatus = "failed"
+)
+
+func (e *ExportJobStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = ExportJobStatus(s)
+	case string:
+		*e = ExportJobStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for ExportJobStatus: %T", src)
+	}
+	return nil
+}
+
+type NullExportJobStatus struct {
+	ExportJobStatus ExportJobStatus `json:"export_job_status"`
+	Valid           bool            `json:"valid"` // Valid is true if ExportJobStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullExportJobStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.ExportJobStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.ExportJobStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullExportJobStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.ExportJobStatus), nil
+}
+
+type ExportType string
+
+const (
+	ExportTypeProjectExcel ExportType = "project_excel"
+	ExportTypeTaskExcel    ExportType = "task_excel"
+)
+
+func (e *ExportType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = ExportType(s)
+	case string:
+		*e = ExportType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for ExportType: %T", src)
+	}
+	return nil
+}
+
+type NullExportType struct {
+	ExportType ExportType `json:"export_type"`
+	Valid      bool       `json:"valid"` // Valid is true if ExportType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullExportType) Scan(value interface{}) error {
+	if value == nil {
+		ns.ExportType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.ExportType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullExportType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.ExportType), nil
+}
+
 type ImportJobStatus string
 
 const (
@@ -229,6 +315,17 @@ func (ns NullTaskStatus) Value() (driver.Value, error) {
 	return string(ns.TaskStatus), nil
 }
 
+type ExportJob struct {
+	ID           uuid.UUID       `json:"id"`
+	UserID       int32           `json:"user_id"`
+	Status       ExportJobStatus `json:"status"`
+	ExportType   ExportType      `json:"export_type"`
+	Url          sql.NullString  `json:"url"`
+	ErrorMessage sql.NullString  `json:"error_message"`
+	CreatedAt    sql.NullTime    `json:"created_at"`
+	UpdatedAt    sql.NullTime    `json:"updated_at"`
+}
+
 type ImportJob struct {
 	ID           uuid.UUID       `json:"id"`
 	FilePath     string          `json:"file_path"`
@@ -237,6 +334,7 @@ type ImportJob struct {
 	ErrorMessage sql.NullString  `json:"error_message"`
 	CreatedAt    sql.NullTime    `json:"created_at"`
 	UpdatedAt    sql.NullTime    `json:"updated_at"`
+	UserID       int32           `json:"user_id"`
 }
 
 type Project struct {

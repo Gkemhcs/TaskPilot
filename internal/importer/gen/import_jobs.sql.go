@@ -14,16 +14,17 @@ import (
 
 const createImportJob = `-- name: CreateImportJob :one
 INSERT INTO import_jobs (
-  id, file_path, importer_type, status
+  id, file_path, importer_type, user_id, status
 ) VALUES (
-  $1, $2, $3, $4
-) RETURNING id, file_path, importer_type, status, error_message, created_at, updated_at
+  $1, $2, $3, $4, $5
+) RETURNING id, file_path, importer_type, status, error_message, created_at, updated_at, user_id
 `
 
 type CreateImportJobParams struct {
 	ID           uuid.UUID       `json:"id"`
 	FilePath     string          `json:"file_path"`
 	ImporterType ImportJobType   `json:"importer_type"`
+	UserID       int32           `json:"user_id"`
 	Status       ImportJobStatus `json:"status"`
 }
 
@@ -32,6 +33,7 @@ func (q *Queries) CreateImportJob(ctx context.Context, arg CreateImportJobParams
 		arg.ID,
 		arg.FilePath,
 		arg.ImporterType,
+		arg.UserID,
 		arg.Status,
 	)
 	var i ImportJob
@@ -43,17 +45,23 @@ func (q *Queries) CreateImportJob(ctx context.Context, arg CreateImportJobParams
 		&i.ErrorMessage,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.UserID,
 	)
 	return i, err
 }
 
 const getImportJob = `-- name: GetImportJob :one
-SELECT id, file_path, importer_type, status, error_message, created_at, updated_at FROM import_jobs
-WHERE id = $1
+SELECT id, file_path, importer_type, status, error_message, created_at, updated_at, user_id FROM import_jobs
+WHERE id = $1 and user_id = $2
 `
 
-func (q *Queries) GetImportJob(ctx context.Context, id uuid.UUID) (ImportJob, error) {
-	row := q.db.QueryRowContext(ctx, getImportJob, id)
+type GetImportJobParams struct {
+	ID     uuid.UUID `json:"id"`
+	UserID int32     `json:"user_id"`
+}
+
+func (q *Queries) GetImportJob(ctx context.Context, arg GetImportJobParams) (ImportJob, error) {
+	row := q.db.QueryRowContext(ctx, getImportJob, arg.ID, arg.UserID)
 	var i ImportJob
 	err := row.Scan(
 		&i.ID,
@@ -63,23 +71,26 @@ func (q *Queries) GetImportJob(ctx context.Context, id uuid.UUID) (ImportJob, er
 		&i.ErrorMessage,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.UserID,
 	)
 	return i, err
 }
 
 const listImportJobs = `-- name: ListImportJobs :many
-SELECT id, file_path, importer_type, status, error_message, created_at, updated_at FROM import_jobs
+SELECT id, file_path, importer_type, status, error_message, created_at, updated_at, user_id FROM import_jobs
+WHERE user_id = $1
 ORDER BY created_at DESC
-LIMIT $1 OFFSET $2
+LIMIT $2 OFFSET $3
 `
 
 type ListImportJobsParams struct {
+	UserID int32 `json:"user_id"`
 	Limit  int32 `json:"limit"`
 	Offset int32 `json:"offset"`
 }
 
 func (q *Queries) ListImportJobs(ctx context.Context, arg ListImportJobsParams) ([]ImportJob, error) {
-	rows, err := q.db.QueryContext(ctx, listImportJobs, arg.Limit, arg.Offset)
+	rows, err := q.db.QueryContext(ctx, listImportJobs, arg.UserID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -95,6 +106,7 @@ func (q *Queries) ListImportJobs(ctx context.Context, arg ListImportJobsParams) 
 			&i.ErrorMessage,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.UserID,
 		); err != nil {
 			return nil, err
 		}
@@ -111,19 +123,25 @@ func (q *Queries) ListImportJobs(ctx context.Context, arg ListImportJobsParams) 
 
 const updateImportJobStatus = `-- name: UpdateImportJobStatus :exec
 UPDATE import_jobs
-SET status = $2,
-    error_message = $3,
+SET status = $3,
+    error_message = $4,
     updated_at = NOW()
-WHERE id = $1
+WHERE id = $1 and user_id=$2
 `
 
 type UpdateImportJobStatusParams struct {
 	ID           uuid.UUID       `json:"id"`
+	UserID       int32           `json:"user_id"`
 	Status       ImportJobStatus `json:"status"`
 	ErrorMessage sql.NullString  `json:"error_message"`
 }
 
 func (q *Queries) UpdateImportJobStatus(ctx context.Context, arg UpdateImportJobStatusParams) error {
-	_, err := q.db.ExecContext(ctx, updateImportJobStatus, arg.ID, arg.Status, arg.ErrorMessage)
+	_, err := q.db.ExecContext(ctx, updateImportJobStatus,
+		arg.ID,
+		arg.UserID,
+		arg.Status,
+		arg.ErrorMessage,
+	)
 	return err
 }

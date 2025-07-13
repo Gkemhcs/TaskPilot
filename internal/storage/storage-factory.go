@@ -15,7 +15,10 @@ func StorageFactory(ctx context.Context,client string, config StorageConfig) (St
 		return gcpClient, nil
 
 	default:
-		localClient := NewLocalStorageClient(config.TempDir, config.ProcessDir)
+		localClient, err := NewLocalStorageClient(config.TempDir, config.ProcessDir)
+		if err != nil {
+			return nil, err
+		}
 		return localClient, nil
 	}
 }

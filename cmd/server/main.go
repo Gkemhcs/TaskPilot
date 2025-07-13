@@ -26,6 +26,8 @@ import (
 	_ "github.com/Gkemhcs/taskpilot/docs"
 	"github.com/Gkemhcs/taskpilot/internal/auth"
 	"github.com/Gkemhcs/taskpilot/internal/config"
+	"github.com/Gkemhcs/taskpilot/internal/exporter"
+	exporterdb "github.com/Gkemhcs/taskpilot/internal/exporter/gen"
 	"github.com/Gkemhcs/taskpilot/internal/importer"
 	importerdb "github.com/Gkemhcs/taskpilot/internal/importer/gen"
 	"github.com/Gkemhcs/taskpilot/internal/middleware"
@@ -38,6 +40,7 @@ import (
 	userdb "github.com/Gkemhcs/taskpilot/internal/user/gen"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/rabbitmq/amqp091-go"
 	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	swaggerFiles "github.com/swaggo/files"
@@ -133,8 +136,44 @@ func NewServer(config *config.Config, logger *logrus.Logger, dbConn *sql.DB) err
 	defer cancel()
 	storageClient,err:=storage.StorageFactory(ctx, config.StorageType, config.StorageConfig)
 	importerRepo:=importerdb.New(dbConn)
-	publisher:=importer.NewRabbitMQPublisher(config.RabbitMQChannel, config.RabbitMQQueueName, config.RabbitMQExchange, config.RabbitMQRoutingKey)
-	importService := importer.NewImportService(storageClient, importerRepo)
+	exporterRepo:=exporterdb.New(dbConn)
+	// Step 1: Connect to RabbitMQ
+	conn, err := amqp091.Dial(config.RabbitMQURL)
+	if err != nil {
+		logger.Fatalf("❌ Failed to connect to RabbitMQ: %v", err)
+	}
+	defer conn.Close()
+
+	// Step 2: Open a channel
+	ch, err := conn.Channel()
+	if err != nil {
+		logger.Fatalf("❌ Failed to open a channel: %v", err)
+	}
+	defer ch.Close()
+
+
+	// Step 3: Declare the queue for project imports
+	err = declareQueue(ch, config.ProjectPublisher.QueueName)
+	if err != nil {
+		logger.Fatalf("❌ Failed to declare project queue: %v", err)
+	}
+
+
+	projectPublisher:=importer.NewRabbitMQPublisher(ch, config.ProjectPublisher.QueueName, config.ProjectPublisher.Exchange,config.ProjectPublisher.RoutingKey,)
+	taskPublisher:=importer.NewRabbitMQPublisher(ch, config.TaskPublisher.QueueName, config.TaskPublisher.Exchange,config.TaskPublisher.RoutingKey,)
+	
+	importService := importer.NewImportService(storageClient, importerRepo, projectPublisher, taskPublisher, logger)
+	importHandler:=importer.NewImportHandler(importService, logger)
+	importer.RegisterImporterHandler(importHandler, v1, jwtManager)
+
+
+	projectExportPublisher:=exporter.NewRabbitMQPublisher(ch, config.ProjectExportPublisher.QueueName, config.ProjectExportPublisher.Exchange,config.ProjectExportPublisher.RoutingKey,)
+	taskExportPublisher:=exporter.NewRabbitMQPublisher(ch, config.TaskExportPublisher.QueueName, config.TaskExportPublisher.Exchange,config.TaskExportPublisher.RoutingKey,)
+	
+	exportService := exporter.NewExportService(exporterRepo, projectExportPublisher, taskExportPublisher, logger)
+	exportHandler:=exporter.NewExportHandler(exportService, logger)
+	exporter.RegisterExportHandler(exportHandler, v1, jwtManager)
+
 
 
 
@@ -146,4 +185,18 @@ func NewServer(config *config.Config, logger *logrus.Logger, dbConn *sql.DB) err
 	})
 	// Start the HTTP server on the configured host and port
 	return router.Run(fmt.Sprintf("%s:%s", config.HOST, config.Port))
+}
+
+
+
+func declareQueue(ch *amqp091.Channel, name string) error {
+	_, err := ch.QueueDeclare(
+		name,  // queue name
+		true,  // durable
+		false, // auto-delete
+		false, // exclusive
+		false, // no-wait
+		nil,   // arguments
+	)
+	return err
 }

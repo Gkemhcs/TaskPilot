@@ -6,13 +6,11 @@ package importerdb
 
 import (
 	"context"
-
-	"github.com/google/uuid"
 )
 
 type Querier interface {
 	CreateImportJob(ctx context.Context, arg CreateImportJobParams) (ImportJob, error)
-	GetImportJob(ctx context.Context, id uuid.UUID) (ImportJob, error)
+	GetImportJob(ctx context.Context, arg GetImportJobParams) (ImportJob, error)
 	ListImportJobs(ctx context.Context, arg ListImportJobsParams) ([]ImportJob, error)
 	UpdateImportJobStatus(ctx context.Context, arg UpdateImportJobStatusParams) error
 }

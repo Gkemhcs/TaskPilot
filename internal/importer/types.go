@@ -2,11 +2,11 @@ package importer
 
 import (
 	"context"
-	"mime/multipart"
+	
 )
 
 type Importer interface {
-	Import(file multipart.File) error
+	Import(path string , headers []string,userID int) error
 }
 
 type ImportJobMessage struct {

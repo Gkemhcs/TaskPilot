@@ -72,3 +72,21 @@ var ErrUploadingFile = errors.New("failed to upload file")
 var ErrInvalidFileType = errors.New("invalid file type, only Excel files are allowed")
 
 var ErrWhileEnqueuingImportJob = errors.New("failed to enqueue import job try after sometime")
+
+var ErrGoogleApplicationCredentialsNotSet = errors.New("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set")
+
+
+var ErrLoadingServiceAccountFile=errors.New("failed to load service account file, check the path and permissions")
+
+
+var ErrInvalidServiceAccountFile=errors.New("failed to unmarshal service account file, check the file format")
+
+
+var ErrGeneratingSignedURL = errors.New("failed to generate signed URL for file download")
+
+var ErrCreatingExportJob = errors.New("failed to create export job")
+
+
+var ErrWhileEnqueuingExportJob = errors.New("failed to enqueue export job, try after sometime")
+
+var ErrInvalidJobID=errors.New("invalid job id try passing valid id")

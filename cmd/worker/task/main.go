@@ -3,6 +3,9 @@ package main
 import (
 	"context"
 	"database/sql"
+	"log"
+
+	"strconv"
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -12,9 +15,11 @@ import (
 	exporterdb "github.com/Gkemhcs/taskpilot/internal/exporter/gen"
 	"github.com/Gkemhcs/taskpilot/internal/importer"
 	importerdb "github.com/Gkemhcs/taskpilot/internal/importer/gen"
-	"github.com/Gkemhcs/taskpilot/internal/project"
-	projectdb "github.com/Gkemhcs/taskpilot/internal/project/gen"
 	"github.com/Gkemhcs/taskpilot/internal/storage"
+	"github.com/Gkemhcs/taskpilot/internal/task"
+	taskdb "github.com/Gkemhcs/taskpilot/internal/task/gen"
+	"github.com/Gkemhcs/taskpilot/internal/user"
+	userdb "github.com/Gkemhcs/taskpilot/internal/user/gen"
 )
 
 func main() {
@@ -32,7 +37,7 @@ func main() {
 	dbURL := "postgres://" + cfg.DBUser + ":" + cfg.DBPassword + "@" + cfg.DBHost + ":" + cfg.DBPort + "/" + cfg.DBName + "?sslmode=disable"
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
-		logger.Fatalf("❌ Failed to connect to DB: %v", err)
+		log.Fatalf("❌ Failed to connect to DB: %v", err)
 	}
 	defer db.Close()
 
@@ -45,54 +50,76 @@ func main() {
 	rabbitURL := cfg.RabbitMQURL
 	conn, err := amqp.Dial(rabbitURL)
 	if err != nil {
-		logger.Fatalf("❌ Failed to connect to RabbitMQ: %v", err)
+		log.Fatalf("❌ Failed to connect to RabbitMQ: %v", err)
 	}
 	defer conn.Close()
 
 	ch, err := conn.Channel()
 	if err != nil {
-		logger.Fatalf("❌ Failed to open channel: %v", err)
+		log.Fatalf("❌ Failed to open channel: %v", err)
 	}
 	defer ch.Close()
 
-	queueName := cfg.ProjectQueue
+	queueName := cfg.TaskQueue
 	_, err = ch.QueueDeclare(queueName, true, false, false, false, nil)
 	if err != nil {
-		logger.Fatalf("❌ Failed to declare Import queue: %v", err)
+		log.Fatalf("❌ Failed to declare Import queue: %v", err)
 	}
-	exportQueueName := cfg.ProjectExportQueue
-
+	exportQueueName := cfg.TaskExportQueue
 	_, err = ch.QueueDeclare(exportQueueName, true, false, false, false, nil)
 	if err != nil {
-		logger.Fatalf("❌ Failed to declare Export queue: %v", err)
+		log.Fatalf("❌ Failed to declare Export queue: %v", err)
 	}
+
 	// ---------- Storage ----------
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	storageClient, err := storage.StorageFactory(ctx, cfg.StorageType, cfg.StorageConfig)
 	if err != nil {
-		logger.Fatalf("❌ Failed to initialize storage: %v", err)
+		log.Fatalf("❌ Failed to initialize storage: %v", err)
 	}
 
 	// ---------- Dependencies ----------
-	projectRepo := projectdb.New(db)
-	projectService := project.NewProjectService(projectRepo)
+	taskRepo := taskdb.New(db)
+	taskService := task.NewTaskService(taskRepo)
+
+	userRepo := userdb.New(db)
+	userService := user.NewUserService(userRepo)
 
 	importRepo := importerdb.New(db)
+	exportRepo := exporterdb.New(db)
 
-	expectedHeaders := []string{"name", "description", "color"}
+	expectedHeaders := []string{"project_id", "title", "assignee_email", "description", "status", "priority", "due_date"}
 
 	rowHandler := func(data map[string]string, userID int) error {
 		ctx := context.Background()
 
-		project := project.Project{
-			Name:        data["name"],
-			Description: data["description"],
-			Color:       data["color"],
-			User:        int(userID), // set properly below
+		user, err := userService.GetUserByEmail(ctx, data["assignee_email"])
+		if err != nil {
+
+			return err
 		}
 
-		_, err := projectService.CreateProject(ctx, project)
+		projectID, err := strconv.Atoi(data["project_id"])
+		if err != nil {
+			return err
+		}
+		dueDate, err := time.Parse(time.RFC3339, data["due_date"])
+		if err != nil {
+			return err
+		}
+
+		taskInput := task.CreateTaskInput{
+			ProjectID:   projectID,
+			Title:       data["title"],
+			AssigneeID:  int(user.ID),
+			Description: data["description"],
+			Status:      data["status"],
+			Priority:    data["priority"],
+			DueDate:     dueDate,
+		}
+
+		_, err = taskService.CreateTask(ctx, taskInput)
 		if err != nil {
 			return err
 		}
@@ -101,18 +128,15 @@ func main() {
 	}
 
 	excelImporter := importer.NewExcelImporter(expectedHeaders, rowHandler)
-	sheetName := "projects"
-	
+	sheetName := "task"
 	excelExporter := exporter.NewExcelExporter(expectedHeaders,sheetName)
-	exportRepo := exporterdb.New(db)
 	
 	localDir := cfg.StorageConfig.ProcessDir
-
-	worker := NewProjectWorker(
+	worker := NewTaskWorker(
 		excelImporter,
 		excelExporter,
 		storageClient,
-		*projectService,
+		taskService,
 		importRepo,
 		exportRepo,
 		logger,
@@ -120,16 +144,15 @@ func main() {
 		sheetName,
 		localDir,
 	)
-
 	go func() {
-		logger.Println("🚀 Starting Project Import Worker...")
+		logger.Println("🚀 Starting Task Import Worker...")
 		if err := worker.StartConsuming(ch, queueName); err != nil {
 			logger.Fatalf("❌ Import Worker failed: %v", err)
 		}
 	}()
 
 	go func() {
-		logger.Println("🚀 Starting Project Export Worker...")
+		logger.Println("🚀 Starting Task Export Worker...")
 		if err := worker.StartConsumingExport(ch, exportQueueName); err != nil {
 			logger.Fatalf("❌ Export Worker failed: %v", err)
 		}
@@ -137,5 +160,4 @@ func main() {
 
 	// block main thread forever or until termination
 	select {}
-
 }

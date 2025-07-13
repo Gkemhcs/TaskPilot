@@ -1,0 +1,1 @@
+ALTER TABLES import_jobs   DROP COLUMN user_id;

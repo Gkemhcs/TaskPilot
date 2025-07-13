@@ -1,6 +1,11 @@
 package task
 
-import "time"
+import (
+	"context"
+	"time"
+
+	taskdb "github.com/Gkemhcs/taskpilot/internal/task/gen"
+)
 
 type CreateTaskRequest struct {
 	ProjectID     int       `json:"project_id"`
@@ -39,4 +44,11 @@ type TaskFilterRequest struct {
 	DueDateTo   *time.Time `form:"due_date_to"   time_format:"2006-01-02T15:04:05Z07:00"`
 	Limit       *int32     `form:"limit"`
 	Offset      *int32     `form:"offset"`
+}
+
+
+
+type BulkTaskService interface{
+	CreateTask(ctx context.Context, taskInput CreateTaskInput) (*taskdb.Task, error)
+	GetTasksByProjectID(ctx context.Context, projectID int) ([]taskdb.Task, error)
 }

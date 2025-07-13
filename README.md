@@ -2,7 +2,7 @@
 
 [![Test and Build](https://github.com/Gkemhcs/TaskPilot/actions/workflows/ci.yml/badge.svg)](https://github.com/Gkemhcs/TaskPilot/actions/workflows/ci.yml)
 
-> TaskPilot is a clean, modular, and production-grade backend system designed for managing tasks and projects, built with Go, PostgreSQL, JWT Authentication, and REST APIs.
+> TaskPilot is a clean, modular, and production-grade backend system designed for managing tasks and projects, built with Go, PostgreSQL, JWT Authentication, and REST APIs. It supports background job processing (import/export), RabbitMQ messaging, and secure file handling through cloud/local storage.
 
 ---
 
@@ -17,7 +17,6 @@
 * [📁 Project Structure](#-project-structure)
 * [🚀 Getting Started](#-getting-started)
 * [📆 Docker Compose Setup](#-docker-compose-setup)
-* [🌐 Deployment](#-deployment)
 * [📈 Future Roadmap](#-future-roadmap)
 * [👤 Author](#-author)
 
@@ -25,31 +24,34 @@
 
 ## ⚙️ Features
 
-
 * 🔐 **Secure JWT Auth**: Access + refresh token rotation with context-based auth middleware
-* ⏱ **Per-IP + Route-Based Rate Limiting**: Prevent abuse using `golang.org/x/time/rate`
+* ⏱ **Per-IP + Route-Based Rate Limiting**: Prevent abuse using `github.com/ulule/limiter/v3`
 * 📊 **Prometheus Metrics**: Per-route request counts, error tracking & latency histograms
 * 🧼 **Clean Hexagonal Architecture**: Domain-specific handlers, services, and types
 * 📇 **Typed DB Access with `sqlc`**: Go code is generated from raw SQL queries, scoped per domain (`user`, `task`, `project`)
 * 🐳 **One-Command Docker Compose**: Boots app, migrations, Prometheus, and PostgreSQL
 * 📚 **Auto Swagger Docs**: Try-it-out UI + Bearer auth support
 * 🧪 **Layered Unit Testing**: Service logic and HTTP handlers tested with mocks & assertions
-* ⚙️ **GitHub Actions CI/CD**: Test, build, and deploy pipeline configured
+* 📤 **Async Import/Export with RabbitMQ**: Background job workers for Excel import/export of projects/tasks
+* ☁️ **Pluggable Cloud/Local File Storage**: Unified interface to support GCP and local processing
+* ⚙️ **GitHub Actions CI**: Automated test and build pipeline
 
 ---
 
 ## 📆 Tech Stack
 
-| Layer     | Tech                                  |
-| --------- | ------------------------------------- |
-| Language  | Go (Golang)                           |
-| Framework | Gin-Gonic (HTTP Routing)              |
-| Database  | PostgreSQL                            |
-| DB Access | `sqlc` (type-safe query generator)    |
-| Auth      | JWT (Bearer Token)                    |
-| API Docs  | Swagger (Swaggo)                      |
-| Testing   | Testify, Mock                         |
-| DevOps    | GitHub Actions, Azure PostgreSQL, GCP |
+| Layer       | Tech                                  |
+|------------|---------------------------------------|
+| Language    | Go (Golang)                           |
+| Framework   | Gin-Gonic (HTTP Routing)              |
+| Database    | PostgreSQL                            |
+| DB Access   | `sqlc` (type-safe query generator)    |
+| Messaging   | RabbitMQ (AMQP workers)               |
+| Auth        | JWT (Bearer Token)                    |
+| API Docs    | Swagger (Swaggo)                      |
+| Testing     | Testify, Mock                         |
+| Storage     | Local FS / GCP (via interface)        |
+| DevOps      | GitHub Actions                        |
 
 ---
 
@@ -62,7 +64,9 @@ graph TD
   C --> D[Services Layer]
   D --> E[Repository Layer\n(sqlc per domain)]
   E --> F[(PostgreSQL)]
-
+  D --> G[RabbitMQ Producers]
+  G --> H[Async Workers (Import/Export)]
+  H --> I[Excel Engine + File Storage]
 ```
 
 ---
@@ -71,11 +75,9 @@ graph TD
 
 * **JWT Bearer Tokens**: Used to secure all `/api/v1/*` routes
 * **Token Types**:
-
   * Access Token (short-lived)
   * Refresh Token (long-lived)
 * **Authorization**:
-
   * Passed via `Authorization: Bearer <token>` in headers
   * Middleware parses and injects `userID` into context
 
@@ -112,7 +114,7 @@ graph TD
 🟢 **CI Integration:**
 
 * Automated tests run on every push and pull request via GitHub Actions.
-* Test results are published and displayed directly in the GitHub UI for easy review (see the "Checks" tab on your PRs and commits).
+* Test results are published and displayed directly in the GitHub UI for easy review.
 
 ---
 
@@ -127,25 +129,16 @@ graph TD
 ├── internal/
 │   ├── auth/                  # JWT handling and generation logic
 │   ├── task/                  # Task domain logic
-│   │   ├── handler.go
-│   │   ├── service.go
-│   │   ├── types.go
-│   │   └── gen/               # sqlc-generated DB access code
 │   ├── project/               # Project domain logic
-│   │   ├── handler.go
-│   │   ├── service.go
-│   │   ├── types.go
-│   │   └── gen/               # sqlc-generated DB access code
 │   ├── user/                  # User domain logic
-│   │   ├── handler.go
-│   │   ├── service.go
-│   │   ├── types.go
-│   │   └── gen/               # sqlc-generated DB access code
 │   ├── middleware/            # JWT, metrics, and rate-limiting middleware
+│   ├── importer/              # Excel importers with row-level validation
+│   ├── exporter/              # Excel exporters + RabbitMQ consumers
+│   ├── storage/               # Cloud/Local file storage abstraction
 │   ├── db/
 │   │   └── migrations/        # SQL schema migrations
 │   ├── errors/                # Custom error definitions
-│   └── utils/                 # Helper utilities for response formatting etc.
+│   └── utils/                 # Helper utilities
 ├── config/                    # Application configuration and env handling
 ├── docs/                      # Swagger docs (autogenerated)
 └── go.mod
@@ -174,31 +167,45 @@ go run cmd/server/main.go
 ## 📆 Docker Compose Setup (Recommended for local development)
 
 1. Make sure Docker and Docker Compose are installed.
-2. Copy or set environment variables in your `.env` file or edit `docker-compose.yaml` as needed.
+2. Copy or set environment variables in your `.env` file or edit `docker-compose.yaml`.
 3. Start all services:
 
 ```bash
 docker-compose up --build
 ```
 
-This will start the backend app, PostgreSQL database, run DB migrations using `migrate`, and expose Prometheus for metrics collection. Swagger will be available at `http://localhost:8080/docs/index.html`.
+This boots the backend app, PostgreSQL, Swagger docs, Prometheus metrics, and RabbitMQ workers.
 
 ---
 
-## 🌐 Deployment
-
-* GCP VM, Azure PostgreSQL, Docker Compose
-* CI/CD using GitHub Actions
 
 ---
+
+## 📡 Ports
+
+| Service         | Port | Description                            |
+|-----------------|------|----------------------------------------|
+| Backend API     | 8080 | Main application server                |
+| PostgreSQL      | 5432 | Database used for persistence          |
+| RabbitMQ (AMQP) | 5672 | Message queue protocol (used by workers)|
+| RabbitMQ UI     | 15672| Web-based management interface         |
+| Redis           | 6379 | In-memory cache store                  |
+| Prometheus      | 9090 | Metrics monitoring and visualization   |
+| Postgres Exporter | 9187 | Exports DB metrics for Prometheus     |
+
+> ℹ️ Ensure the listed ports are not blocked by firewalls and not used by other local services.
+
+
 
 ## 📈 Future Roadmap
 
-* [ ] Role-based access control
-* [ ] Redis caching for frequently accessed tasks
+* [ ] Task Export per Project (done) ✅
+* [ ] Global Task Export for User
+* [ ] Role-based access control (RBAC)
 * [ ] WebSocket support for live task updates
-* [ ] OpenTelemetry tracing
-* [ ] Admin panel / dashboard integration
+* [ ] Redis caching for popular projects
+* [ ] Admin dashboard & analytics
+* [ ] Tracing support (OpenTelemetry)
 
 ---
 
@@ -206,4 +213,4 @@ This will start the backend app, PostgreSQL database, run DB migrations using `m
 
 **Koti Eswar Mani Gudi**
 📧 [gudikotieswarmani@gmail.com](mailto:gudikotieswarmani@gmail.com)
-🌐 [GitHub](https://github.com/Gkemhcs) | [LinkedIn](https://www.linkedin.com/in/gkemhcs/) | [Portfolio](https://gkemhcs.dev)
+🌐 [GitHub](https://github.com/Gkemhcs) | [LinkedIn](https://www.linkedin.com/in/gkemhcs/) | [Portfolio](https://gkemhcs.github.io)

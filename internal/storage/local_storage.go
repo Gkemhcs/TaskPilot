@@ -5,13 +5,24 @@ import (
 	"mime/multipart"
 	"os"
 	"path/filepath"
+	"time"
 )
 
-func NewLocalStorageClient(tempDir, processDir string) *LocalStorageClient {
-	return &LocalStorageClient{
+func NewLocalStorageClient(tempDir, processDir string) (*LocalStorageClient,error) {
+	if err := os.MkdirAll(tempDir, os.ModePerm); err != nil {
+		return nil,err
+	}
+
+	// Ensure ProcessDir exists
+	if err := os.MkdirAll(processDir, os.ModePerm); err != nil {
+		return nil,err
+	}
+
+    
+    return &LocalStorageClient{
 		TempDir:    tempDir,
 		ProcessDir: processDir,
-	}
+	},nil
 }
 
 type LocalStorageClient struct {
@@ -53,7 +64,14 @@ func (c *LocalStorageClient) Download(filename string) (string, error) {
     return destPath, err
 }
 
+func (c *LocalStorageClient) GenerateSignedURL(filename string,inExpires time.Duration)(string,error){
+    destPath := filepath.Join(c.ProcessDir, filename)
+    return destPath,nil 
+}
+
 func (c *LocalStorageClient) Delete(filename string) error {
     _ = os.Remove(filepath.Join(c.TempDir, filename))
     return os.Remove(filepath.Join(c.ProcessDir, filename))
 }
+
+

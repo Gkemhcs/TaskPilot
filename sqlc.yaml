@@ -29,4 +29,11 @@ packages:
     engine: "postgresql"
     emit_json_tags: true
     emit_interface: true
+  - name: "exporterdb"
+    path: "internal/exporter/gen"
+    queries: "internal/exporter/export_jobs.sql"
+    schema: "internal/db/migrations"
+    engine: "postgresql"
+    emit_json_tags: true
+    emit_interface: true
 
