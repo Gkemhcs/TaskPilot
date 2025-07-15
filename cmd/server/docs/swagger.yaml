@@ -1,0 +1,18 @@
+basePath: /api/v1
+host: localhost:8080
+info:
+  contact:
+    email: gudikotieswarmani@gmail.com
+    name: Koti Eswar Mani Gudi
+  description: Task and Project Management Backend built with Go, Gin, and PostgreSQL.
+  termsOfService: http://swagger.io/terms/
+  title: TaskPilot API
+  version: "1.0"
+paths: {}
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer <your-token>" to authorize
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

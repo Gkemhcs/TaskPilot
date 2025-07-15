@@ -48,6 +48,7 @@ type UserHandler struct {
 // @Failure      400   {object}  utils.ErrorResponse
 // @Failure      500   {object}  utils.ErrorResponse
 // @Router       /api/v1/users/ [post]
+
 func (u *UserHandler) CreateUser(c *gin.Context) {
 
 	var user User

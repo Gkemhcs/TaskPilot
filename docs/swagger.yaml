@@ -1,4 +1,11 @@
 definitions:
+  exporter.ExcelExporter:
+    type: object
+  exporter.ExportTaskRequest:
+    properties:
+      project_id:
+        type: integer
+    type: object
   project.Project:
     properties:
       color:
@@ -48,22 +55,6 @@ definitions:
     required:
     - id
     type: object
-  user.User:
-    properties:
-      email:
-        description: User Email
-        type: string
-      name:
-        description: Username
-        type: string
-      password:
-        description: User password
-        type: string
-    required:
-    - email
-    - name
-    - password
-    type: object
   utils.ErrorResponse:
     properties:
       error_code:
@@ -76,16 +67,215 @@ definitions:
         example: error
         type: string
     type: object
-  utils.SuccessResponse:
-    properties:
-      data: {}
-      status:
-        example: success
-        type: string
-    type: object
 info:
   contact: {}
 paths:
+  /api/v1/export/projects:
+    post:
+      consumes:
+      - application/json
+      description: Creates an export job for a project's data in Excel format
+      parameters:
+      - description: Export project request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/exporter.ExportTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Export project to Excel
+      tags:
+      - export
+  /api/v1/export/status/{jobId}:
+    get:
+      description: Retrieves the status and details of an export job
+      parameters:
+      - description: Export job ID
+        in: path
+        name: jobId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get export job status
+      tags:
+      - export
+  /api/v1/export/tasks:
+    post:
+      consumes:
+      - application/json
+      description: Creates an export job for tasks of a project in Excel format
+      parameters:
+      - description: Export task request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/exporter.ExportTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Export tasks to Excel
+      tags:
+      - export
+  /api/v1/import/projects:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload an Excel file to import projects in bulk
+      parameters:
+      - description: Excel file to import
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Import job created successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: File is required
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Import projects from Excel file
+      tags:
+      - Import
+  /api/v1/import/status/{jobId}:
+    get:
+      description: Get the status of a project or task import job
+      parameters:
+      - description: Job ID
+        in: path
+        name: jobId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Request succeeded
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad request or job not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get import job status
+      tags:
+      - Import
+  /api/v1/import/tasks:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload an Excel file to import tasks in bulk
+      parameters:
+      - description: Excel file to import
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Import job created successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: File is required
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Import tasks from Excel file
+      tags:
+      - Import
   /api/v1/projects/:
     get:
       description: Retrieves all projects for the authenticated user
@@ -460,34 +650,4 @@ paths:
       summary: Filter tasks
       tags:
       - tasks
-  /api/v1/users/:
-    post:
-      consumes:
-      - application/json
-      description: Creates a new user in the system
-      parameters:
-      - description: User registration input
-        in: body
-        name: user
-        required: true
-        schema:
-          $ref: '#/definitions/user.User'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/utils.SuccessResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/utils.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/utils.ErrorResponse'
-      summary: Register a new user
-      tags:
-      - users
 swagger: "2.0"

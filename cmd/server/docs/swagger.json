@@ -1,0 +1,24 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "Task and Project Management Backend built with Go, Gin, and PostgreSQL.",
+        "title": "TaskPilot API",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "name": "Koti Eswar Mani Gudi",
+            "email": "gudikotieswarmani@gmail.com"
+        },
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/api/v1",
+    "paths": {},
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Type \"Bearer \u003cyour-token\u003e\" to authorize",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    }
+}

@@ -13,9 +13,10 @@ import (
 	customErrors "github.com/Gkemhcs/taskpilot/internal/errors"
 )
 
+// NewGCPStorageClient initializes a GCPStorageClient for interacting with Google Cloud Storage.
+// Ensures the local processing directory exists, loads credentials, and sets up the client.
 func NewGCPStorageClient(ctx context.Context, bucketName, prefix, processDir string) (*GCPStorageClient, error) {
 	// Ensure ProcessDir exists
-
 	if err := os.MkdirAll(processDir, os.ModePerm); err != nil {
 		return nil, err
 	}
@@ -42,9 +43,10 @@ func NewGCPStorageClient(ctx context.Context, bucketName, prefix, processDir str
 		PrivateKey:     saKey,
 		GoogleAccessID: saEmail,
 	}, nil
-
 }
 
+// loadServiceAccount loads service account credentials from a JSON file.
+// Returns the client email and private key for signing URLs.
 func loadServiceAccount(path string) (string, []byte, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -57,20 +59,25 @@ func loadServiceAccount(path string) (string, []byte, error) {
 	return sa.ClientEmail, []byte(sa.PrivateKey), nil
 }
 
+// serviceAccount represents the relevant fields from a GCP service account JSON file.
 type serviceAccount struct {
 	ClientEmail string `json:"client_email"`
 	PrivateKey  string `json:"private_key"`
 }
 
+// GCPStorageClient implements StorageClient for Google Cloud Storage.
+// Handles file upload, download, deletion, and signed URL generation.
 type GCPStorageClient struct {
-	bucketName     string
-	Prefix         string // e.g., "imports"
-	LocalDir       string // where to store downloaded file locally
-	client         *storage.Client
-	GoogleAccessID string
-	PrivateKey     []byte
+	bucketName     string          // GCP bucket name
+	Prefix         string          // Prefix for object names (e.g., "imports")
+	LocalDir       string          // Local directory for downloaded files
+	client         *storage.Client // GCP storage client
+	GoogleAccessID string          // Service account email for signed URLs
+	PrivateKey     []byte          // Private key for signed URLs
 }
 
+// Upload uploads a file to the GCP bucket under the specified prefix and filename.
+// Sets the content type for Excel files.
 func (g *GCPStorageClient) Upload(file multipart.File, filename string) error {
 	ctx := context.Background()
 	objectName := filepath.Join(g.Prefix, filename)
@@ -90,6 +97,8 @@ func (g *GCPStorageClient) Upload(file multipart.File, filename string) error {
 	return nil
 }
 
+// Download retrieves a file from the GCP bucket and saves it locally.
+// Returns the local file path.
 func (g *GCPStorageClient) Download(filename string) (string, error) {
 	ctx := context.Background()
 	objectName := filepath.Join(g.Prefix, filename)
@@ -111,6 +120,8 @@ func (g *GCPStorageClient) Download(filename string) (string, error) {
 	return localPath, err
 }
 
+// GenerateSignedURL creates a signed URL for accessing the file in GCP bucket.
+// The URL is valid for the specified duration.
 func (g *GCPStorageClient) GenerateSignedURL(filename string, expiresIn time.Duration) (string, error) {
 	objectName := filepath.Join(g.Prefix, filename)
 
@@ -126,6 +137,7 @@ func (g *GCPStorageClient) GenerateSignedURL(filename string, expiresIn time.Dur
 	return url, nil
 }
 
+// Delete removes the file from both GCP bucket and local disk.
 func (g *GCPStorageClient) Delete(filename string) error {
 	ctx := context.Background()
 	objectName := filepath.Join(g.Prefix, filename)

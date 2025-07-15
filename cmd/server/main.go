@@ -57,7 +57,7 @@ func NewServer(config *config.Config, logger *logrus.Logger, dbConn *sql.DB) err
 	// Create a new Gin router with default middleware (logger, recovery)
 	router := gin.Default()
 
-	docs.SwaggerInfo.Host = fmt.Sprintf("%s:%s", config.HOST, config.Port)
+	docs.SwaggerInfo.Host = fmt.Sprintf("%s:%s", "localhost", config.Port)
 	
 
 	redisAddr := fmt.Sprintf("%s:%s", config.RedisHost, config.RedisPort)
