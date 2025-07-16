@@ -14,7 +14,7 @@ type Querier interface {
 	GetProjectById(ctx context.Context, id int64) (Project, error)
 	GetProjectByName(ctx context.Context, arg GetProjectByNameParams) (Project, error)
 	GetProjectsByUserId(ctx context.Context, userID int32) ([]Project, error)
-	UpdateProject(ctx context.Context, arg UpdateProjectParams) (Project, error)
+	UpdateProject(ctx context.Context, arg UpdateProjectParams) error
 }
 
 var _ Querier = (*Queries)(nil)

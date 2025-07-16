@@ -4,23 +4,44 @@
 
 > TaskPilot is a clean, modular, and production-grade backend system designed for managing tasks and projects, built with Go, PostgreSQL, JWT Authentication, and REST APIs. It supports background job processing (import/export), RabbitMQ messaging, and secure file handling through cloud/local storage.
 
+
+
 ---
 
 ## 📌 Table of Contents
-
-* [⚙️ Features](#️-features)
-* [📆 Tech Stack](#-tech-stack)
-* [🧱 Architecture](#-architecture)
-* [🔐 Authentication](#-authentication)
-* [📄 API Documentation](#-api-documentation)
-* [🧪 Testing Strategy](#-testing-strategy)
-* [📁 Project Structure](#-project-structure)
-* [🚀 Getting Started](#-getting-started)
-* [📆 Docker Compose Setup](#-docker-compose-setup)
-* [📈 Future Roadmap](#-future-roadmap)
-* [👤 Author](#-author)
+- [🚀 TaskPilot — Scalable Task and Project Management Backend](#-taskpilot--scalable-task-and-project-management-backend)
+  - [📌 Table of Contents](#-table-of-contents)
+  - [🎬 Demo Videos](#-demo-videos)
+  - [⚙️ Features](#️-features)
+  - [📆 Tech Stack](#-tech-stack)
+  - [🧱 Architecture](#-architecture)
+  - [🔐 Authentication](#-authentication)
+  - [📄 API Documentation](#-api-documentation)
+    - [Try Auth-Protected Endpoints](#try-auth-protected-endpoints)
+  - [🧪 Testing Strategy](#-testing-strategy)
+  - [📁 Project Structure](#-project-structure)
+  - [🚀 Getting Started](#-getting-started)
+    - [1. Clone the Repository and Install Dependencies](#1-clone-the-repository-and-install-dependencies)
+    - [2. Set Up Google Cloud Storage (GCP Bucket)](#2-set-up-google-cloud-storage-gcp-bucket)
+    - [3. Running Without Docker (Manual Mode)](#3-running-without-docker-manual-mode)
+    - [4. Docker Compose Deployment (Recommended for Local Development)](#4-docker-compose-deployment-recommended-for-local-development)
+  - [📡 Ports](#-ports)
+  - [📈 Future Roadmap](#-future-roadmap)
+  - [👤 Author](#-author)
 
 ---
+## 🎬 Demo Videos
+
+### 📤 Project Import and Task Export Demo
+
+
+Check out the video demo showcasing both the **Project Import** and **Task Export** features of TaskPilot — built with Go, PostgreSQL, RabbitMQ, and a clean layered architecture.
+
+[![Watch Demo Video](https://img.youtube.com/vi/YOUR_VIDEO_ID/0.jpg)](https://youtu.be/SJZP2r9oeXs)
+
+
+
+
 
 ## ⚙️ Features
 
@@ -146,35 +167,108 @@ graph TD
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Getting Started 
 
-### 1. Clone and setup
+### 1. Clone the Repository and Install Dependencies
+
+1. Clone the repository:
 
 ```bash
 git clone https://github.com/Gkemhcs/taskpilot.git
 cd taskpilot
 go mod tidy
+```
 
+2. Set up your environment variables (replace with your actual values):
+
+```bash
 PORT=5000
 DATABASE_URL=postgres://...
 JWT_SECRET=your-super-secret-key
-
-go run cmd/server/main.go
+REDIS_URL
 ```
 
 ---
 
-## 📆 Docker Compose Setup (Recommended for local development)
+### 2. Set Up Google Cloud Storage (GCP Bucket)
 
-1. Make sure Docker and Docker Compose are installed.
-2. Copy or set environment variables in your `.env` file or edit `docker-compose.yaml`.
-3. Start all services:
+1. Enter your Google Cloud project ID (must have billing enabled):
+
+```bash
+echo "Enter  your google cloud project id with billing account attached"
+read PROJECT_ID
+gcloud config set project $PROJECT_ID
+```
+
+2. Create the GCP storage bucket:
+
+```bash
+echo  "Creating the gcp  storage bucket"
+gsutil mb  -l asia-south1 "gs://taskpilot-${PROJECT_ID}"
+echo "Bucket creation successful. BucketName:- taskpilot-${PROJECT_ID}"
+```
+
+3. Create a service account, grant permissions, and download the key file:
+
+```bash
+echo "Creating the service account and adding permissions and downloading the key file"
+
+gcloud iam service-accounts create taskpilot-storage-writer --display-name "Taskpilot backend service account"
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+--member "serviceAccount:taskpilot-storage-writer@${PROJECT_ID}.iam.gserviceaccount.com" \
+--role roles/storage.admin 
+
+gcloud iam service-accounts keys create key.json --iam-account "taskpilot-storage-writer@${PROJECT_ID}.iam.gserviceaccount.com"
+```
+
+---
+
+### 3. Running Without Docker (Manual Mode)
+
+> Open **three separate terminals** and run each of the following command sets in its own terminal window:
+
+**Terminal 1: Start the API Backend Server**
+
+```bash
+export GOOGLE_APPLICATION_CREDENTIALS="$(pwd)/key.json"
+export GCP_BUCKET="taskpilot-${PROJECT_ID}"
+export GCP_PREFIX="taskpilot-backend-data"
+echo "Staring the  TaskPilot API backend server"
+go run main.go
+```
+
+**Terminal 2: Start the Project Worker**
+
+```bash
+export GOOGLE_APPLICATION_CREDENTIALS="$(pwd)/key.json"
+export GCP_BUCKET="taskpilot-${PROJECT_ID}"
+export GCP_PREFIX="taskpilot-backend-data"
+echo "Staring the  Taskpilot Project Worker"
+go run .cmd/worker/project
+```
+
+**Terminal 3: Start the Task Worker**
+
+```bash
+export GOOGLE_APPLICATION_CREDENTIALS="$(pwd)/key.json"
+export GCP_BUCKET="taskpilot-${PROJECT_ID}"
+export GCP_PREFIX="taskpilot-backend-data"
+echo "Staring the  Taskpilot  Task Worker"
+go run .cmd/worker/task
+```
+
+---
+
+### 4. Docker Compose Deployment (Recommended for Local Development)
+
+1. Ensure Docker and Docker Compose are installed on your system.
+2. Update the `GCP_BUCKET` value in the `docker-compose.yaml` file to match the bucket you created above.
 
 ```bash
 docker-compose up --build
 ```
 
-This boots the backend app, PostgreSQL, Swagger docs, Prometheus metrics, and RabbitMQ workers.
+This will start the backend app, PostgreSQL, Swagger docs, Prometheus metrics, and RabbitMQ workers in one go.
 
 ---
 

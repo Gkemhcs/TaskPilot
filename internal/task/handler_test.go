@@ -567,3 +567,138 @@ func DeleteTaskHandler(t *testing.T){
 }
 
 
+func TestUpdateTaskHandler( t *testing.T){
+
+	taskHandler, taskMockRepo, _, _, jwtManager, logger := SetupNewTaskHandler()
+	jwtToken, err := jwtManager.GenerateAccessToken(1234, "test-user", "gudi@gmail")
+	require.NoError(t, err)
+	jwtMiddleware := middleware.JWTAuthMiddleware(logger, jwtManager)
+
+	testCases:=[]struct{
+		testName string 
+		requestBody map[string]any
+		taskID any
+		expectedParams taskdb.UpdateTaskParams
+		mockSetup func(params taskdb.UpdateTaskParams)
+		
+		expectedServiceCall bool 
+		expectedStatusCode int 
+	}{
+		{
+			testName: "Valid task update params",
+			requestBody: map[string]any{
+				"title":"valid task",
+				"description":"hello this is valid task",
+			},
+			taskID: 1345,
+			expectedParams: taskdb.UpdateTaskParams{
+					ID: 1345,
+					Title: sql.NullString{
+						String:"valid task",
+						Valid: true,
+					},
+					Description: sql.NullString{
+						String: "hello this is valid task",
+						Valid: true,
+					},
+			},
+			mockSetup: func(params taskdb.UpdateTaskParams) {
+				taskMockRepo.On("UpdateTask",mock.Anything,params).Return(nil)
+			},
+			expectedStatusCode: http.StatusOK,
+			expectedServiceCall: true,
+		},
+		{
+			testName: "Invalid task update params",
+			requestBody: map[string]any{
+				"title":"duplicate task",
+				"description":"hello this is duplicate task",
+			},
+			taskID: 1345,
+			expectedParams: taskdb.UpdateTaskParams{
+					ID: 1345,
+					Title: sql.NullString{
+						String:"duplicate task",
+						Valid: true,
+					},
+					Description: sql.NullString{
+						String: "hello this is duplicate task",
+						Valid: true,
+					},
+			},
+			mockSetup: func(params taskdb.UpdateTaskParams) {
+				taskMockRepo.On("UpdateTask",mock.Anything,params).Return(customErrors.ErrTaskAlreadyExists)
+			},
+			expectedStatusCode: http.StatusBadRequest,
+			expectedServiceCall: true,
+		},
+		{
+			testName: "Invalid task id",
+			requestBody: map[string]any{
+				"title":"duplicate task",
+				"description":"hello this is duplicate task",
+			},
+			taskID: "abc1234",
+			expectedParams: taskdb.UpdateTaskParams{
+					
+			},
+			mockSetup: func(params taskdb.UpdateTaskParams) {
+				
+			},
+			expectedStatusCode: http.StatusBadRequest,
+			expectedServiceCall: false ,
+		},
+	}
+
+
+	for _, tc := range testCases{
+		t.Run(tc.testName,func( t *testing.T){
+			gin.SetMode(gin.TestMode)
+			taskMockRepo.Calls=nil 
+			taskMockRepo.ExpectedCalls=nil 
+			tc.mockSetup(tc.expectedParams)
+
+			
+
+			
+
+			body,err:=json.Marshal(tc.requestBody)
+			assert.NoError(t,err)
+
+				// Create request
+			req, _ := http.NewRequest(http.MethodPatch, fmt.Sprintf("/api/v1/tasks/%v", tc.taskID), bytes.NewReader(body))
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("Authorization", "Bearer "+jwtToken)
+
+			// Recorder
+			w := httptest.NewRecorder()
+
+			// Set up full group routing like production
+			r := gin.Default()
+			apiGroup := r.Group("/api/v1")
+			userGroup := apiGroup.Group("/tasks")
+
+			userGroup.PATCH("/:id", jwtMiddleware, taskHandler.UpdateTask)
+			r.ServeHTTP(w, req)
+
+			assert.Equal(t, w.Code, tc.expectedStatusCode)
+
+			if tc.expectedServiceCall {
+				taskMockRepo.AssertCalled(t, "UpdateTask", mock.Anything, mock.Anything)
+
+			} else {
+				taskMockRepo.AssertNotCalled(t, "UpdateTask", mock.Anything, mock.Anything)
+
+			}
+
+
+
+
+
+		})
+
+	}
+
+
+}
+

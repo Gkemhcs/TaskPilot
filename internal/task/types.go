@@ -28,7 +28,7 @@ type CreateTaskInput struct {
 }
 
 type UpdateTaskRequest struct {
-	ID          int64      `json:"id" binding:"required"`
+	ID          int64      `json:"id,omitempty"`
 	Title       *string    `json:"title,omitempty"`
 	Description *string    `json:"description,omitempty"`
 	DueDate     *time.Time `json:"due_date,omitempty"`

@@ -31,10 +31,10 @@ func (p *ProjectService) CreateProject(ctx context.Context, project Project) (*p
 	}
 
 	proj, err := p.projectRepository.CreateProject(ctx, projectParams)
-	if  IsErrorCode(err, customErrors.UniqueViolationErr) {
-		
-				return nil,customErrors.ErrProjectAlreadyExists
-			}
+	if IsErrorCode(err, customErrors.UniqueViolationErr) {
+
+		return nil, customErrors.ErrProjectAlreadyExists
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -88,25 +88,52 @@ func (p *ProjectService) GetProjectByName(ctx context.Context, name string, user
 	return &project, nil
 }
 
-func (p *ProjectService) UpdateProject(ctx context.Context, projectUpdateRequest UpdateProjectRequest) (*projectdb.Project, error) {
+func (p *ProjectService) UpdateProject(ctx context.Context, projectUpdateRequest UpdateProjectRequest) error {
+
 	var updateRequestParams projectdb.UpdateProjectParams
+	if projectUpdateRequest.Color != nil {
+		updateRequestParams.Color = projectdb.NullProjectColor{
+			ProjectColor: mapColor(*projectUpdateRequest.Color),
+			Valid:        true,
+		}
+	} else {
+		updateRequestParams.Color = projectdb.NullProjectColor{
+			Valid: false,
+		}
+	}
+
+	if projectUpdateRequest.Description != nil {
+		updateRequestParams.Description = sql.NullString{
+			String: *projectUpdateRequest.Description,
+			Valid:  true,
+		}
+	} else {
+		updateRequestParams.Description = sql.NullString{
+			Valid: false,
+		}
+	}
+	if projectUpdateRequest.Name != nil {
+		updateRequestParams.Name = sql.NullString{
+			String: *projectUpdateRequest.Name,
+			Valid:  true,
+		}
+	} else {
+		updateRequestParams.Name = sql.NullString{
+
+			Valid: false,
+		}
+	}
 	updateRequestParams.ID = int64(projectUpdateRequest.ProjectID)
-	if projectUpdateRequest.Name != "" {
-		updateRequestParams.Name = projectUpdateRequest.Name
-	}
-	if projectUpdateRequest.Description != "" {
-		updateRequestParams.Description = sql.NullString{String: projectUpdateRequest.Description, Valid: true}
-	}
-	if projectUpdateRequest.Color != "" {
 
-		updateRequestParams.Color = projectdb.NullProjectColor{ProjectColor: mapColor(projectUpdateRequest.Color), Valid: true}
-	}
+	err := p.projectRepository.UpdateProject(ctx, updateRequestParams) 
+	if IsErrorCode(err, customErrors.UniqueViolationErr) {
 
-	project, err := p.projectRepository.UpdateProject(ctx, updateRequestParams)
+		return customErrors.ErrTaskAlreadyExists
+	}
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return &project, nil
+	return nil
 }
 
 func mapColor(color string) projectdb.ProjectColor {

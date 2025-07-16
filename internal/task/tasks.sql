@@ -23,7 +23,7 @@ DELETE FROM tasks WHERE id = $1;
 
 
 
--- name: UpdateTask :execrows
+-- name: UpdateTask :exec
 
 UPDATE tasks
 SET
@@ -51,3 +51,11 @@ WHERE
   AND (due_date <= COALESCE(sqlc.narg('due_date_to'), due_date))
 ORDER BY due_date
 LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
+
+
+
+
+
+
+
+

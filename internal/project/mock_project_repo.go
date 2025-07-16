@@ -37,8 +37,8 @@ func (m *MockProjectRepo) GetProjectByName(ctx context.Context, params projectdb
 	return args.Get(0).(projectdb.Project), args.Error(1)
 }
 
-func (m *MockProjectRepo) UpdateProject(ctx context.Context, arg projectdb.UpdateProjectParams) (projectdb.Project, error){
+func (m *MockProjectRepo) UpdateProject(ctx context.Context, arg projectdb.UpdateProjectParams)  error{
 	args:=m.Called(ctx,arg)
-	return args.Get(0).(projectdb.Project), args.Error(1)
+	return args.Error(0)
 }
 

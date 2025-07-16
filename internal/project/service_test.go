@@ -415,3 +415,77 @@ func TestGetProjectByName(t *testing.T) {
 	}
 }
 
+
+
+func TestUpdateProject(t *testing.T){
+
+
+	testCases:=[]struct{
+			testName string 
+			req UpdateProjectRequest
+			expectedParams projectdb.UpdateProjectParams
+			expectedError error
+	}{
+			{
+				testName: "Valid project update",
+				req: UpdateProjectRequest{
+					ProjectID: 1234,
+					Name: func( s string)*string{return &s}("starpilot project"),
+					Color: func( s string)*string{return &s}("yellow"),
+				},
+				expectedParams: projectdb.UpdateProjectParams{
+					Name: sql.NullString{
+						String: "starpilot project",
+						Valid: true,
+					},
+					ID: 1234,
+					Color: projectdb.NullProjectColor{
+						ProjectColor: projectdb.ProjectColorYELLOW,
+						Valid: true,
+					},
+				},
+				expectedError: nil ,
+			},
+			{
+				testName: "db connection error",
+				req: UpdateProjectRequest{
+					ProjectID: 1234,
+					Name: func( s string)*string{return &s}("starpilot project"),
+					Color: func( s string)*string{return &s}("yellow"),
+				},
+				expectedParams: projectdb.UpdateProjectParams{
+					Name: sql.NullString{
+						String: "starpilot project",
+						Valid: true,
+					},
+					ID: 1234,
+					Color: projectdb.NullProjectColor{
+						ProjectColor: projectdb.ProjectColorYELLOW,
+						Valid: true,
+					},
+				},
+				expectedError: errors.New("db error") ,
+			},
+
+			
+	}
+
+	for _,tc := range testCases{
+		t.Run(tc.testName,func(t *testing.T){
+				mockRepo.Calls=nil 
+				mockRepo.ExpectedCalls=nil 
+
+				mockRepo.On("UpdateProject",mock.Anything,tc.expectedParams).Return(tc.expectedError)
+
+
+				err:=projectService.UpdateProject(context.TODO(),tc.req)
+
+				assert.Equal(t,err,tc.expectedError)
+
+				mockRepo.AssertCalled(t,"UpdateProject",mock.Anything,tc.expectedParams)
+
+
+		})
+	}
+
+}

@@ -463,3 +463,83 @@ func TestDeleteTask(t *testing.T) {
 	}
 
 }
+
+
+func TestUpdateTask(t *testing.T){
+	testCases:=[]struct{
+		testName string 
+		updateTaskRequest UpdateTaskRequest
+		expectedParams taskdb.UpdateTaskParams
+		expectedError error
+	}{
+		{
+			testName: "valid update of task",
+			updateTaskRequest: UpdateTaskRequest{
+				ID:1234,
+				Title: func(s string) *string { return &s }("iojojo"),
+				Description: func (s string)*string{return &s}("this is valid description"),
+			},
+			expectedParams: taskdb.UpdateTaskParams{
+				ID: 1234,
+				Title: sql.NullString{
+					String: "iojojo",
+					Valid: true ,
+				},
+				Description: sql.NullString{
+					String: "this is valid description",
+					Valid: true,
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			testName: "invalid update request as the task with same title already exists in the project",
+			updateTaskRequest: UpdateTaskRequest{
+				ID:1234,
+				Title: func(s string) *string { return &s }("iojojo"),
+			},
+			expectedParams: taskdb.UpdateTaskParams{
+				ID: 1234,
+				Title: sql.NullString{
+					String: "iojojo",
+					Valid: true ,
+				},
+			
+			},
+			expectedError: customErrors.ErrTaskAlreadyExists,
+		},
+		{
+			testName: "db error",
+			updateTaskRequest: UpdateTaskRequest{
+				ID:1234,
+				Title: func(s string) *string { return &s }("title1"),
+			},
+			expectedParams: taskdb.UpdateTaskParams{
+				ID: 1234,
+				Title: sql.NullString{
+					String: "title1",
+					Valid: true ,
+				},
+				
+			},
+			expectedError: errors.New("db is unable to fetch"),
+		},
+	}
+
+
+	for _ , tc := range testCases{
+		t.Run(tc.testName,func(t *testing.T){
+			mockRepo.ExpectedCalls=nil 
+			mockRepo.Calls=nil 
+			mockRepo.On("UpdateTask",mock.Anything,tc.expectedParams).Return(tc.expectedError)
+
+
+			err:=taskService.UpdateTask(context.TODO(),tc.updateTaskRequest)
+			assert.Equal(t,err,tc.expectedError)
+
+			mockRepo.AssertCalled(t,"UpdateTask",mock.Anything,tc.expectedParams)
+
+
+		})
+	}
+}

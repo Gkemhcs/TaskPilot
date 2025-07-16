@@ -17,7 +17,11 @@ func main() {
 	logger := utils.NewLogger()
 
 	// Load configuration from environment variables or .env file
-	config := config.LoadConfig()
+	config,err := config.LoadConfig()
+	if err!=nil{
+		logger.Fatalf("%v",err)
+	}
+	
 
 	// Initialize the database connection using the loaded config and logger
 	// Returns a userdb.Queries instance for database operations
@@ -25,7 +29,7 @@ func main() {
 
 	logger.Info("Taskpilot server started running")
 	// Start the HTTP server with the provided config, logger, and database connection
-	err := server.NewServer(config, logger, dbConn)
+	err = server.NewServer(config, logger, dbConn)
 
 	if err != nil {
 		// Panic if the server fails to start

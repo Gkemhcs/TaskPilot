@@ -1,7 +1,9 @@
 package config
 
 import (
+	"errors"
 	"log"
+
 	"time"
 
 	"github.com/Gkemhcs/taskpilot/internal/storage"
@@ -10,7 +12,7 @@ import (
 
 // LoadConfig loads application configuration from .env file and environment variables.
 // It sets default values and parses durations as needed.
-func LoadConfig() *Config {
+func LoadConfig() (*Config,error) {
 	viper.SetConfigFile(".env")
 	viper.AutomaticEnv()
 
@@ -57,7 +59,11 @@ func LoadConfig() *Config {
 	if err != nil {
 		log.Fatalf("invalid REFRESH_TOKEN_DURATION: %v", err)
 	}
-
+	if viper.GetString("STORAGE_TYPE")=="gcp"{
+		if viper.GetString("GOOGLE_APPLICATION_CREDENTIALS")==""{
+			return nil,errors.New("PLEASE SET GOOGLE_APPLICATION_CREDENTIALS env pointing to gcp iam service account file")
+		}
+	}
 	return &Config{
 		Port:                 viper.GetString("PORT"),
 		DBHost:               viper.GetString("DB_HOST"),
@@ -103,5 +109,5 @@ func LoadConfig() *Config {
 			RoutingKey: viper.GetString("TASK_EXPORT_ROUTING_KEY"),
 		},
 
-	}
+	},nil 
 }

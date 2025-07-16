@@ -12,9 +12,16 @@ SELECT * FROM projects WHERE user_id=$1 ORDER BY id;
 
 SELECT * FROM projects WHERE name=$1 AND user_id=$2;
 
--- name: UpdateProject :one
-UPDATE projects SET name=$2, description=$3, color=$4, updated_at=now()
-WHERE id=$1 RETURNING *;    
+
+-- name: UpdateProject :exec
+UPDATE projects
+SET
+  name = COALESCE(sqlc.narg('name'), name),
+  description = COALESCE(sqlc.narg('description'), description),
+  color = COALESCE(sqlc.narg('color'), color) ,
+  updated_at = now()
+WHERE id = sqlc.arg('id');
+
 
 -- name: DeleteProject :exec
 DELETE FROM projects WHERE id = $1;

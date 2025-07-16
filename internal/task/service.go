@@ -142,19 +142,29 @@ func (t *TaskService) UpdateTask(ctx context.Context, req UpdateTaskRequest) err
 			Time:  derefTime(req.DueDate),
 			Valid: req.DueDate != nil,
 		},
-		Status: taskdb.NullTaskStatus{
-			TaskStatus: taskdb.TaskStatus(deref(req.Status)),
-			Valid:      req.Status != nil,
-		},
-		Priority: taskdb.NullTaskPriority{
-			TaskPriority: taskdb.TaskPriority(deref(req.Priority)),
-			Valid:        req.Priority != nil,
-		},
 	}
-	rows, err := t.taskRepository.UpdateTask(ctx, updateParams)
-	if rows == 0 {
-		return customErrors.ErrTaskNotFound
+	if req.Priority!=nil{
+		updateParams.Priority=taskdb.NullTaskPriority{
+			TaskPriority: getPriority(*req.Priority),
+			Valid: true,
+		}
+	}else{
+		updateParams.Priority=taskdb.NullTaskPriority{
+			Valid: false,
+		}
 	}
+	if req.Status!=nil{
+		updateParams.Status=taskdb.NullTaskStatus{
+			TaskStatus: getStatus(*req.Status),
+			Valid: true,
+		}
+	}else{
+		updateParams.Status=taskdb.NullTaskStatus{
+			Valid: false,
+		}
+	}
+	err := t.taskRepository.UpdateTask(ctx, updateParams)
+	
 	if err != nil {
 		return err
 	}

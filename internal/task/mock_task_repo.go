@@ -34,9 +34,9 @@ func (m *MockTaskRepo) DeleteTask(ctx context.Context, arg int64) (int64, error)
 	return args.Get(0).(int64), args.Error(1)
 }
 
-func(m *MockTaskRepo)UpdateTask(ctx context.Context, arg taskdb.UpdateTaskParams) (int64, error){
+func(m *MockTaskRepo)UpdateTask(ctx context.Context, arg taskdb.UpdateTaskParams) error{
 	args:=m.Called(ctx,arg)
-	return args.Get(0).(int64),args.Error(1)
+	return args.Error(0)
 }
 func(m *MockTaskRepo) ListTasksWithFilters(ctx context.Context, arg taskdb.ListTasksWithFiltersParams) ([]taskdb.Task, error){
 	args:=m.Called(ctx,arg)

@@ -129,34 +129,29 @@ func (q *Queries) GetProjectsByUserId(ctx context.Context, userID int32) ([]Proj
 	return items, nil
 }
 
-const updateProject = `-- name: UpdateProject :one
-UPDATE projects SET name=$2, description=$3, color=$4, updated_at=now()
-WHERE id=$1 RETURNING id, user_id, name, description, color, created_at, updated_at
+const updateProject = `-- name: UpdateProject :exec
+UPDATE projects
+SET
+  name = COALESCE($1, name),
+  description = COALESCE($2, description),
+  color = COALESCE($3, color) ,
+  updated_at = now()
+WHERE id = $4
 `
 
 type UpdateProjectParams struct {
-	ID          int64            `json:"id"`
-	Name        string           `json:"name"`
+	Name        sql.NullString   `json:"name"`
 	Description sql.NullString   `json:"description"`
 	Color       NullProjectColor `json:"color"`
+	ID          int64            `json:"id"`
 }
 
-func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) (Project, error) {
-	row := q.db.QueryRowContext(ctx, updateProject,
-		arg.ID,
+func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) error {
+	_, err := q.db.ExecContext(ctx, updateProject,
 		arg.Name,
 		arg.Description,
 		arg.Color,
+		arg.ID,
 	)
-	var i Project
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.Name,
-		&i.Description,
-		&i.Color,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
+	return err
 }

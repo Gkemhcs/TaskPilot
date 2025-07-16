@@ -1,3 +1,4 @@
+
 package task
 
 import (
@@ -42,7 +43,7 @@ func RegisterTaskRoutes(router *gin.RouterGroup, taskHandler *TaskHandler, jwtMa
 		taskRouter.POST("/", taskHandler.CreateTask)
 		taskRouter.GET("/:id", taskHandler.GetTaskByID)
 		taskRouter.DELETE("/:id", taskHandler.DeleteTask)
-		taskRouter.PATCH("/", taskHandler.UpdateTask)
+		taskRouter.PATCH("/:id", taskHandler.UpdateTask)
 		taskRouter.GET("/filter", taskHandler.FilterTasks)
 
 	}
@@ -261,9 +262,19 @@ func (t *TaskHandler) UpdateTask(c *gin.Context) {
 		utils.Error(c, http.StatusBadRequest, "Invalid request body")
 		return
 	}
-	err := t.taskService.UpdateTask(c.Request.Context(), req)
+	id:=c.Param("id")
+	taskID,err:=strconv.Atoi(id)
+	if err!=nil{
+		t.logger.Errorf("%v",err)
+		utils.Error(c,http.StatusBadRequest,customErrors.ErrInvalidTaskID.Error())
+		return 
+
+	}
+	req.ID=int64(taskID)
+
+	err = t.taskService.UpdateTask(c.Request.Context(), req)
 	if err != nil {
-		t.logger.Errorf("%v", err)
+		t.logger.Errorf(" error is %v", err)
 		utils.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}

@@ -18,10 +18,10 @@ type Project struct {
 // UpdateProjectRequest is used to update an existing project's details.
 // Fields are optional and only provided values will be updated.
 type UpdateProjectRequest struct {
-	ProjectID   int    `json:"projectId"`   // ID of the project to update
-	Name        string `json:"name"`        // New name for the project (optional)
-	Description string `json:"description"` // New description (optional)
-	Color       string `json:"color"`       // New color label (optional)
+	ProjectID int `json:"project_id"`
+	Name        *string `json:"name"`        // New name for the project (optional)
+	Description *string `json:"description"` // New description (optional)
+	Color       *string `json:"color"`       // New color label (optional)
 }
 
 // IProjectService defines the interface for project-related business logic.

@@ -39,6 +39,7 @@ func RegisterProjectRoutes(r *gin.RouterGroup, handler *ProjectHandler, jwtManag
 		projectGroup.GET("/", handler.GetProjectsByUserId)
 		projectGroup.PUT("/:id", handler.UpdateProject)
 		projectGroup.DELETE("/:id", handler.DeleteProject)
+		projectGroup.PATCH("/:id",handler.UpdateProject)
 		projectGroup.GET("/names/", handler.GetProjectByName)
 		projectGroup.GET("/:id/tasks", handler.GetTasksByProjectID)
 	}
@@ -233,6 +234,35 @@ func (p *ProjectHandler) GetProjectsByUserId(c *gin.Context) {
 // @Router       /api/v1/projects/{id} [put]
 // @Security BearerAuth
 func (p *ProjectHandler) UpdateProject(c *gin.Context) {
+		var updateProjectRequest UpdateProjectRequest
+
+		err:=c.ShouldBindJSON(&updateProjectRequest)
+		if err!=nil{
+			p.logger.Errorf("%v",err)
+			utils.Error(c,http.StatusBadRequest,err.Error())
+			return 
+		}
+		id:=c.Param("id")
+		projectID,err:=strconv.Atoi(id)
+		if err!=nil{
+			p.logger.Errorf("%v",err)
+			utils.Error(c ,http.StatusBadRequest,customErrors.ErrInvalidProjectId.Error())
+			return 
+		}
+		updateProjectRequest.ProjectID=projectID
+		ctx,cancel:=context.WithTimeout(c.Request.Context(),5*time.Second)
+		defer cancel()
+		err=p.projectService.UpdateProject(ctx,updateProjectRequest)
+		if err!=nil{
+			p.logger.Errorf("%v",err)
+			utils.Error(c,http.StatusBadRequest,err.Error())
+			return 
+		}
+		p.logger.Info("project update call request is succeeded ")
+		utils.Success(c,http.StatusOK,map[string]any{
+			"message":"project updates successfully",
+		})
+
 
 }
 

@@ -231,7 +231,7 @@ func (q *Queries) ListTasksWithFilters(ctx context.Context, arg ListTasksWithFil
 	return items, nil
 }
 
-const updateTask = `-- name: UpdateTask :execrows
+const updateTask = `-- name: UpdateTask :exec
 
 UPDATE tasks
 SET
@@ -253,8 +253,8 @@ type UpdateTaskParams struct {
 	ID          int64            `json:"id"`
 }
 
-func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (int64, error) {
-	result, err := q.db.ExecContext(ctx, updateTask,
+func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) error {
+	_, err := q.db.ExecContext(ctx, updateTask,
 		arg.Title,
 		arg.Description,
 		arg.DueDate,
@@ -262,8 +262,5 @@ func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (int64, 
 		arg.Priority,
 		arg.ID,
 	)
-	if err != nil {
-		return 0, err
-	}
-	return result.RowsAffected()
+	return err
 }
